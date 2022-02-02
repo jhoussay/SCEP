@@ -1,0 +1,9 @@
+/bin/*
+/code/.vs/*
+/code/.qmake.stash
+/tmp/*
+env.bat
+*.sln
+*.vcxproj
+*.user
+*.filters
