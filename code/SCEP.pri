@@ -1,3 +1,8 @@
+CONFIG -= flat
+
+exists( $$(TARGET).pro ): HEADERS += $$(TARGET).pro
+exists( $$(TARGET).prf ): HEADERS += $$(TARGET).prf
+
 ROOT_DIR = ../..
 build_pass:CONFIG(debug, debug|release) {
     TYPE=debug
@@ -7,6 +12,8 @@ build_pass:CONFIG(debug, debug|release) {
     UI_DIR = $$ROOT_DIR/tmp/$$TARGET/$$TYPE/ui
     RCC_DIR  = $$ROOT_DIR/tmp/$$TARGET/$$TYPE/rcc
     PRECOMPILED_DIR = $$ROOT_DIR/tmp/$$TARGET/$$TYPE/pch
+    # Console
+    CONFIG *= console
     # Last !
     TARGET = $$join(TARGET,,,_d)
 } else {

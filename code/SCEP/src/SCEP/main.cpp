@@ -1,14 +1,16 @@
 #include <SCEP/SCEP.h>
 //
 #include <QApplication>
-#include <QWidget>
+#include <SCEP/ExplorerWidget.h>
 //
 int main(int argc, char *argv[])
 {
 	QApplication app(argc, argv);
-	QWidget w;
-	w.setWindowTitle("Hello SCEP !");
-	w.show();
+	ExplorerWidget widget;
+	ErrorPtr pError = widget.init();
+	displayError(pError);
+	widget.setWindowTitle("Hello SCEP !");
+	widget.show();
 
 	int rslt = app.exec();
 
