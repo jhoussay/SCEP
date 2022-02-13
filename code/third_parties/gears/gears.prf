@@ -1,0 +1,8 @@
+
+INCLUDEPATH *= $$PWD
+
+build_pass:CONFIG(debug, debug|release) {
+    LIBS *= -lgears_d
+} else {
+    LIBS *= -lgears_d
+}
