@@ -4,13 +4,16 @@
 //
 #include <QWidget>
 //
-struct ExplorerWidgetData;	// PIMPL
+//struct ExplorerWidgetData;	// PIMPL
+class ExplorerWrapper;
 //
 /**
  *	@brief				
  */
 class ExplorerWidget : public QWidget
 {
+	Q_OBJECT
+
 public:
 	/**
 	 *	@brief		
@@ -24,6 +27,23 @@ public:
 public:
 	ErrorPtr init(const QString& path = {});
 
+	ErrorPtr setCurrentPath(const QString& path);
+	QString currentPath() const;
+
+signals:
+	void	pathChanged(QString path);
+	void	closed();
+
+protected:
+	void 	moveEvent(QMoveEvent* pEvent) override;
+	void 	resizeEvent(QResizeEvent* pEvent) override;
+	void 	showEvent(QShowEvent* pEvent) override;
+
 private:
-	ExplorerWidgetData* p_d = nullptr;
+	ErrorPtr updateEmbeddedWidget_p();
+	void updateEmbeddedWidget();
+
+private:
+	ExplorerWrapper* p_wrapper = nullptr;
+	QWidget* p_widget = nullptr;
 };

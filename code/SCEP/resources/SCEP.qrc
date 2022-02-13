@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/">
+        <file>SCEP/icons/menu-48-dark.png</file>
+        <file>SCEP/icons/menu-48-light.png</file>
+        <file>SCEP/icons/plus-48-dark.png</file>
+        <file>SCEP/icons/plus-48-light.png</file>
+        <file>SCEP/icons/close-48-dark.png</file>
+        <file>SCEP/icons/close-48-light.png</file>
+        <file>SCEP/images/SCEP-full.png</file>
+        <file>SCEP/images/SCEP-simple.png</file>
+    </qresource>
+</RCC>

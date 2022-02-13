@@ -1,4 +1,5 @@
 TEMPLATE = subdirs
 CONFIG += ordered
 
-SUBDIRS = SCEP
+SUBDIRS += third_parties/gears
+SUBDIRS += SCEP

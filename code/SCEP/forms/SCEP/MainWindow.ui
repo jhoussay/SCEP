@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>SCEP</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../../resources/SCEP.qrc">
+    <normaloff>:/SCEP/images/SCEP-simple.png</normaloff>:/SCEP/images/SCEP-simple.png</iconset>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
+    <item row="0" column="0">
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="styleSheet">
+       <string notr="true">
+ /* make use of negative margins for overlapping tabs */
+ QTabBar::tab {
+     /* expand/overlap to the left and right by 4px */
+     margin-left: -3px;
+     margin-right: -3px;
+ }
+ 
+ QTabBar::tab:first {
+     margin-left: 0; /* the first selected tab has nothing to overlap with on the left */
+ }
+ 
+ QTabBar::tab:last {
+     margin-right: 0; /* the last selected tab has nothing to overlap with on the right */
+ }
+ 
+ QTabBar::tab:only-one {
+     margin: 0; /* if there is only one tab, we don't want overlapping margins */
+ }
+
+
+QTabBar::tab:top, QTabBar::tab:bottom {
+    min-width: 8ex;
+    padding: 5px 10px 5px 15px;
+}
+
+QTabBar::tab:top:!selected {
+    margin-top: 1px;
+}
+
+QTabBar::tab:bottom:!selected {
+    margin-bottom: 3px;
+}
+</string>
+      </property>
+      <property name="tabShape">
+       <enum>QTabWidget::Triangular</enum>
+      </property>
+      <property name="currentIndex">
+       <number>-1</number>
+      </property>
+      <property name="tabsClosable">
+       <bool>true</bool>
+      </property>
+      <property name="movable">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources>
+  <include location="../../resources/SCEP.qrc"/>
+ </resources>
+ <connections/>
+</ui>

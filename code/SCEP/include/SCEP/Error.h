@@ -1,9 +1,9 @@
 ﻿#pragma once
 //
 #include <memory>
-#include <iostream>
 //
 #include <QString>
+#include <QtDebug>
 //
 using Error = QString;
 //
@@ -22,7 +22,7 @@ inline ErrorPtr success()
 inline void displayError(ErrorPtr pError)
 {
 	if (pError)
-		std::cerr << pError->toStdString() << std::endl;
+		qCritical() << *pError;
 }
 //
 inline bool isError(ErrorPtr pError)

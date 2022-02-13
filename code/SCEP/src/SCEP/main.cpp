@@ -1,18 +1,21 @@
 #include <SCEP/SCEP.h>
+#include <SCEP/MainWindow.h>
+#include <SCEP/Theme.h>
 //
 #include <QApplication>
-#include <SCEP/ExplorerWidget.h>
 //
 int main(int argc, char *argv[])
 {
 	QApplication app(argc, argv);
-	ExplorerWidget widget;
-	ErrorPtr pError = widget.init();
-	displayError(pError);
-	widget.setWindowTitle("Hello SCEP !");
-	widget.show();
 
-	int rslt = app.exec();
+	int rslt = 0;
+	{
+		Theme theme;
+		MainWindow mainWindow(&theme);
+		mainWindow.show();
+
+		rslt = app.exec();
+	}
 
 	return rslt;
 }
