@@ -10,6 +10,7 @@
 #include <optional>
 #endif //FRAMELESS
 //
+class QAction;
 class QToolButton;
 //
 namespace Ui
@@ -40,6 +41,7 @@ protected:
 protected slots:
 	void	addNewTab(QString path = {});
 	void	showMenu();
+	void	about();
 
 	void	onTabCloseRequested();
 
@@ -53,8 +55,16 @@ private:
 private:
 	Theme* ptr_theme = nullptr;
 	Ui::MainWindow* p_ui = nullptr;
+
+	QAction* p_addTabAction = nullptr;
+	QAction* p_closeTabAction = nullptr;
+	QAction* p_aboutAction = nullptr;
+	QAction* p_licensesAction = nullptr;
+
 	QToolButton* p_addTabButton = nullptr;
 	QToolButton* p_menuButton = nullptr;
+
+
 
 #ifdef FRAMELESS
 	std::optional<QPoint> m_dragPosition;

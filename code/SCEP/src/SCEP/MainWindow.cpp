@@ -1,5 +1,6 @@
 ﻿#include <SCEP/MainWindow.h>
 #include <SCEP/ExplorerWidget.h>
+#include <SCEP/AboutDialog.h>
 //
 #include <ui_MainWindow.h>
 //
@@ -162,7 +163,7 @@ void MainWindow::showMenu()
 	QMenu menu(this);
 	menu.addAction(ptr_theme->icon(Theme::Icon::AddTab), tr("Add tab"));
 	menu.addAction(ptr_theme->icon(Theme::Icon::CloseTab), tr("Close current tab"));
-	menu.addAction(ptr_theme->icon(Theme::Icon::About), tr("About SCEP..."));
+	menu.addAction(ptr_theme->icon(Theme::Icon::About), tr("About SCEP..."), this, &MainWindow::about);
 
 	// Get menu real width
 	menu.show();
@@ -175,6 +176,12 @@ void MainWindow::showMenu()
 
 	// Show menu
 	menu.exec(p_menuButton->mapToGlobal(topLeftPos));
+}
+//
+void MainWindow::about()
+{
+	AboutDialog about(this);
+	about.exec();
 }
 //
 void MainWindow::onTabCloseRequested()

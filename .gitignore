@@ -1,9 +1,12 @@
 /bin/*
 /code/.vs/*
 /code/.qmake.stash
+/code/SCEP/include/SCEP/Date.h
+/code/SCEP/include/SCEP/Version.h
 /tmp/*
 env.bat
 *.sln
 *.vcxproj
 *.user
 *.filters
+*.rc

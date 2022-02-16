@@ -22,14 +22,29 @@ if not exist "%VCVARSALL_DIR%\vcvarsall.bat" (
 call "%VCVARSALL_DIR%\vcvarsall.bat" %BUILD%
 
 
-rem qmake
-rem -----
+rem qmake.exe
+rem ---------
 
 if not exist "%QT_DIR%\bin\qmake.exe" (
     echo Unable to find qmake.exe. Please verify the env.bat content.
     goto end
 )
 
+rem date
+rem ----
+cd %~dp0
+echo #pragma once> code/SCEP/include/SCEP/Date.h
+echo static const char* SCEP_DATE = "%DATE%";>> code/SCEP/include/SCEP/Date.h
+
+
+rem version
+rem -------
+cd %~dp0
+echo #pragma once> code/SCEP/include/SCEP/Version.h
+for /F "tokens=*" %%A in (VERSION) do echo static constexpr unsigned int %%A;>> code/SCEP/include/SCEP/Version.h
+
+rem qmake
+rem -----
 cd %~dp0/code
 rem rm .qmake.stash
 "%QT_DIR%\bin\qmake.exe" -tp vc -r SCEP.pro
