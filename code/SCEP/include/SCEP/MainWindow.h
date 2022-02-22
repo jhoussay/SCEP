@@ -40,16 +40,18 @@ protected:
 
 protected slots:
 	void	addNewTab(QString path = {});
+	void	closeCurrentTab();
 	void	showMenu();
 	void	about();
 
 	void	onTabCloseRequested();
 
 	void	pathChanged(QString path);
-	void	closed();
+	void	tabClosed();
 
 private:
-	void updateIcons();
+	void	closeTab(int tabIndex);
+	void	updateIcons();
 	static QString tabName(const QString& tabPath);
 
 private:
@@ -59,7 +61,6 @@ private:
 	QAction* p_addTabAction = nullptr;
 	QAction* p_closeTabAction = nullptr;
 	QAction* p_aboutAction = nullptr;
-	QAction* p_licensesAction = nullptr;
 
 	QToolButton* p_addTabButton = nullptr;
 	QToolButton* p_menuButton = nullptr;

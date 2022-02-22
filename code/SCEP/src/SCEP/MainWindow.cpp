@@ -1,5 +1,4 @@
 ﻿#include <SCEP/MainWindow.h>
-#include <SCEP/ExplorerWidget.h>
 #include <SCEP/AboutDialog.h>
 //
 #include <ui_MainWindow.h>
@@ -17,6 +16,15 @@
 #include <QLabel>
 #endif //FRAMELESS
 //
+#define EXPLORER_WIDGET_VERSION 2
+// 
+#if EXPLORER_WIDGET_VERSION == 1
+#	include <SCEP/ExplorerWidget.h>
+#else
+#	include <SCEP/ExplorerWidget2.h>
+#	define ExplorerWidget ExplorerWidget2
+#endif //EXPLORER_WIDGET_VERSION
+//
 MainWindow::MainWindow(Theme* ptrTheme)
 	:	QMainWindow()
 	,	ptr_theme(ptrTheme)
@@ -29,6 +37,7 @@ MainWindow::MainWindow(Theme* ptrTheme)
 
 	p_ui = new Ui::MainWindow();
 	p_ui->setupUi(this);
+	p_ui->tabWidget->setTabsClosable(false);
 
 #ifdef FRAMELESS
 	QIcon icon = qApp->windowIcon();
@@ -42,13 +51,33 @@ MainWindow::MainWindow(Theme* ptrTheme)
 	p_ui->tabWidget->setCornerWidget(pCloseButton, Qt::TopRightCorner);
 #endif //FRAMELESS
 
-	//connect(p_ui->tabWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(onTabCloseRequested(int)));
-	p_ui->tabWidget->setTabsClosable(false);
+
+
+	// Actions
+	//////////
+
+	p_addTabAction = new QAction(tr("Add new tab"), this);
+	connect(p_addTabAction, SIGNAL(triggered()), this, SLOT(addNewTab()));
+	p_addTabAction->setShortcutContext(Qt::ApplicationShortcut);
+	p_addTabAction->setShortcut(Qt::CTRL | Qt::Key_T);
+
+	p_closeTabAction = new QAction(tr("Close current tab"), this);
+	connect(p_closeTabAction, SIGNAL(triggered()), this, SLOT(closeCurrentTab()));
+	p_closeTabAction->setShortcutContext(Qt::ApplicationShortcut);
+	p_closeTabAction->setShortcut(Qt::CTRL | Qt::Key_W);
+
+
+	p_aboutAction = new QAction(tr("About SCEP..."), this);
+	connect(p_aboutAction, SIGNAL(triggered()), this, SLOT(about()));
+	//p_aboutAction->setShortcut();
+
+	// Buttons
+	//////////
 
 	p_addTabButton = new QToolButton(this);
 	p_addTabButton->setAutoRaise(true);
-	p_addTabButton->setToolTip( tr("Add new tab") );
-	connect(p_addTabButton, SIGNAL(clicked()), this, SLOT(addNewTab()));
+	p_addTabButton->setToolTip( p_addTabAction->text() );
+	connect(p_addTabButton, SIGNAL(clicked()), p_addTabAction, SLOT(trigger()));
 	p_ui->tabWidget->setCornerWidget(p_addTabButton, Qt::TopLeftCorner);
 
 	p_menuButton = new QToolButton(this);
@@ -131,9 +160,11 @@ void MainWindow::addNewTab(QString path)
 		path = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
 	}
 
+	setUpdatesEnabled(false);
+
 	ExplorerWidget* pExplorerWidget = new ExplorerWidget();
 	connect(pExplorerWidget, SIGNAL(pathChanged(QString)), this, SLOT(pathChanged(QString)));
-	connect(pExplorerWidget, SIGNAL(closed()), this, SLOT(closed()));
+	connect(pExplorerWidget, SIGNAL(closed()), this, SLOT(tabClosed()));
 	if (ErrorPtr pError = pExplorerWidget->init(path))
 	{
 		displayError(pError);
@@ -155,15 +186,22 @@ void MainWindow::addNewTab(QString path)
 
 		p_ui->tabWidget->setCurrentIndex(tabIndex);
 	}
+
+	setUpdatesEnabled(true);
+}
+//
+void MainWindow::closeCurrentTab()
+{
+	closeTab(p_ui->tabWidget->currentIndex());
 }
 //
 void MainWindow::showMenu()
 {
 	// Create menu
 	QMenu menu(this);
-	menu.addAction(ptr_theme->icon(Theme::Icon::AddTab), tr("Add tab"));
-	menu.addAction(ptr_theme->icon(Theme::Icon::CloseTab), tr("Close current tab"));
-	menu.addAction(ptr_theme->icon(Theme::Icon::About), tr("About SCEP..."), this, &MainWindow::about);
+	menu.addAction(p_addTabAction);
+	menu.addAction(p_closeTabAction);
+	menu.addAction(p_aboutAction);
 
 	// Get menu real width
 	menu.show();
@@ -192,14 +230,7 @@ void MainWindow::onTabCloseRequested()
 		{
 			if (p_ui->tabWidget->tabBar()->tabButton(tabIndex, QTabBar::RightSide) == pToolButton)
 			{
-				QWidget* pWidget = p_ui->tabWidget->widget(tabIndex);
-				p_ui->tabWidget->removeTab(tabIndex);
-				delete pWidget;
-				pWidget = nullptr;
-
-				if (p_ui->tabWidget->count() == 0)
-					close();
-
+				closeTab(tabIndex);
 				break;
 			}
 		}
@@ -221,15 +252,37 @@ void MainWindow::pathChanged(QString path)
 	}
 }
 //
-void MainWindow::closed()
+void MainWindow::tabClosed()
 {
 	// TODO
 }
 //
+void MainWindow::closeTab(int tabIndex)
+{
+	if (tabIndex >= 0)
+	{
+		if (QWidget* pWidget = p_ui->tabWidget->widget(tabIndex))
+		{
+			p_ui->tabWidget->removeTab(tabIndex);
+			delete pWidget;
+			pWidget = nullptr;
+
+			if (p_ui->tabWidget->count() == 0)
+				close();
+		}
+	}
+}
+//
 void MainWindow::updateIcons()
 {
+	p_addTabAction->setIcon( ptr_theme->icon(Theme::Icon::AddTab) );
 	p_addTabButton->setIcon( ptr_theme->icon(Theme::Icon::AddTab) );
+
+	p_closeTabAction->setIcon( ptr_theme->icon(Theme::Icon::CloseTab) );
+
 	p_menuButton->setIcon( ptr_theme->icon(Theme::Icon::Menu) );
+
+	
 }
 //
 QString MainWindow::tabName(const QString& tabPath)
