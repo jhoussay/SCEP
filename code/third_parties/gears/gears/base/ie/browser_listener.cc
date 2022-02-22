@@ -100,8 +100,8 @@ bool BrowserListener::IsDownloading()
 
 // Dispatcher for IE disp events
 HRESULT __stdcall BrowserListener::Invoke(DISPID event, const IID &riid,
-                                          LCID lcid, WORD wFlags, DISPPARAMS *params, VARIANT *pVarResult,
-                                          EXCEPINFO *pExcepInfo, UINT *puArgErr)
+                                          LCID /*lcid*/, WORD /*wFlags*/, DISPPARAMS *params, VARIANT * /*pVarResult*/,
+                                          EXCEPINFO * /*pExcepInfo*/, UINT * /*puArgErr*/)
 {
     if (IID_NULL != riid)
         return DISP_E_UNKNOWNINTERFACE;

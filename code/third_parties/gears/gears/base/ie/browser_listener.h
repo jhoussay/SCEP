@@ -122,7 +122,7 @@ public:
         return S_OK;
     }
 
-    virtual HRESULT _stdcall GetTypeInfo(UINT iTInfo, LCID lcid,
+    virtual HRESULT _stdcall GetTypeInfo(UINT /*iTInfo*/, LCID /*lcid*/,
                                          ITypeInfo **ppTInfo)
     {
         *ppTInfo = 0;
@@ -288,16 +288,16 @@ protected:
     bool BrowserBusy();
 
     // Event handler methods.
-    virtual void OnBeforeNavigate2(IWebBrowser2 *window, const CString &url,
-                                   bool *cancel) {}
-    virtual void OnDocumentComplete(IWebBrowser2 *window, const CString &url) {}
+    virtual void OnBeforeNavigate2(IWebBrowser2 * /*window*/, const CString & /*url*/,
+                                   bool * /*cancel*/) {}
+    virtual void OnDocumentComplete(IWebBrowser2 * /*window*/, const CString & /*url*/) {}
     virtual void OnDownloadBegin() {}
     virtual void OnDownloadComplete() {}
-    virtual void OnNavigateComplete2(IWebBrowser2 *window, const CString &url) {}
-    virtual void OnProgressChange(LONG progress, LONG progressMax) {}
+    virtual void OnNavigateComplete2(IWebBrowser2 * /*window*/, const CString & /*url*/) {}
+    virtual void OnProgressChange(LONG /*progress*/, LONG /*progressMax*/) {}
 
     // Derivative events build on top of IE events.
-    virtual void OnPageDownloadBegin(const CString &url) {}
+    virtual void OnPageDownloadBegin(const CString & /*url*/) {}
     virtual void OnPageDownloadComplete() {}
 
 private:
