@@ -17,6 +17,7 @@ public:
 public:
 	ErrorPtr initialize(const QString& path = {});
 	HWND hwnd() const;
+	void setVisible(bool visible);
 	ErrorPtr setCurrentPath(const QString& path);
 	QString currentPath() const;
 	ErrorPtr finalize();
@@ -26,18 +27,7 @@ signals:
 	void closed();
 
 private:
-
-	struct Instance
-	{
-		DWORD pid;
-		std::vector<HWND> wids;
-	};
-
-	static ErrorPtr initializeExplorer(IWebBrowser2*& pWebBrower);
-	static std::vector<DWORD> findPIDs(const QString& name);
-	static ErrorPtr getExplorerInstances(std::vector<Instance>& instances);
-	static ErrorPtr getExplorerWindows(DWORD pid, std::vector<HWND>& wids);
-	static ErrorPtr getNewExplorerWindow(const std::vector<Instance>& instances, IWebBrowser2* pWebBrower, DWORD& pid, HWND& wid);
+	static ErrorPtr initializeExplorer(IWebBrowser2*& pWebBrower, HWND& wid);
 
 
 	/////////////////////////////////////////////
@@ -57,7 +47,8 @@ private:
 	void OnPageDownloadComplete() override;
 
 private:
-	IWebBrowser2* p_webBrower = nullptr; //!< Web browser ? No, file explorer !
+	IWebBrowser2* p_webBrowser = nullptr; //!< Web browser ? No, file explorer !
 	DWORD m_pid = 0;
 	HWND m_wid = 0;
 };
+//

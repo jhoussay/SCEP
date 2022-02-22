@@ -6,7 +6,7 @@
 //
 #include <uxtheme.h>
 //
-LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
 	switch(Message)
 	{
@@ -22,7 +22,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 //
-HWND CreateTheWindow(LPCWSTR WindowTitle)
+static HWND CreateTheWindow(LPCWSTR WindowTitle)
 {
 	static LPCWSTR sClassName = L"MyClass";
 
@@ -55,8 +55,6 @@ HWND CreateTheWindow(LPCWSTR WindowTitle)
 								nullptr,
 								nullptr,
 								nullptr);
-
-	UpdateWindow(hwnd);
 	return hwnd;
 }
 //
@@ -90,22 +88,18 @@ ErrorPtr ExplorerWidget::init(const QString& path)
 	//                         while it can't directly embed the explorer window !
 
 	// Create a new empty window
-	HWND windowId = CreateTheWindow(L"Win32 SCEP");
-	CHECK(windowId, "Could not create win32 window");
+	m_windowId = CreateTheWindow(L"Win32 SCEP");
+	CHECK(m_windowId, "Could not create win32 window");
 
 	// Change explorer window parent to the newly created window
 	HWND explorerId = p_wrapper->hwnd();
-	HWND oldId = SetParent(explorerId, windowId);
+	HWND oldId = SetParent(explorerId, m_windowId);
 	CHECK(oldId, "Could not change explorer window parent : " + QString::number(GetLastError()));
-	LONG rslt = SetWindowLong(explorerId, GWL_STYLE, WS_CHILDWINDOW | WS_VISIBLE);
+	LONG rslt = SetWindowLong(explorerId, GWL_STYLE, WS_CHILDWINDOW);
 	CHECK(rslt != 0, "Could not change explorer window style : " + QString::number(GetLastError()));
-	BOOL ok = UpdateWindow(explorerId);
-	CHECK(ok, "Could not update explorer window");
-	ok = UpdateWindow(windowId);
-	CHECK(ok, "Could not update widget window");
 
 	// Create the embedding Qt widget
-	QWindow* pWindow = QWindow::fromWinId((WId) windowId);
+	QWindow* pWindow = QWindow::fromWinId((WId) m_windowId);
 	CHECK(pWindow, "Could not create QWindow !");
 	p_widget = QWidget::createWindowContainer(pWindow);
 	p_widget->setMinimumWidth(100);
@@ -115,9 +109,6 @@ ErrorPtr ExplorerWidget::init(const QString& path)
 	pLayout->setContentsMargins(0, 0, 0, 0);
 	pLayout->addWidget(p_widget);
 	setLayout(pLayout);
-
-	// Resize
-	resize(500, 300);
 
 	// Done !
 	return success();
@@ -143,20 +134,17 @@ QString ExplorerWidget::currentPath() const
 	}
 }
 //
-void ExplorerWidget::moveEvent(QMoveEvent* pEvent)
+void ExplorerWidget::paintEvent([[maybe_unused]] QPaintEvent* pEvent)
 {
-	QWidget::moveEvent(pEvent);
-	//updateEmbeddedWidget();
-}
-void ExplorerWidget::resizeEvent(QResizeEvent* pEvent)
-{
-	QWidget::resizeEvent(pEvent);
+	if (! m_visibleExplorer)
+	{
+		p_wrapper->setVisible(true);
+		m_visibleExplorer = true;
+	}
+
 	updateEmbeddedWidget();
-}
-void ExplorerWidget::showEvent(QShowEvent* pEvent)
-{
-	QWidget::showEvent(pEvent);
-	updateEmbeddedWidget();
+
+	//QWidget::paintEvent(pEvent);
 }
 //
 ErrorPtr ExplorerWidget::updateEmbeddedWidget_p()
@@ -181,6 +169,7 @@ ErrorPtr ExplorerWidget::updateEmbeddedWidget_p()
 		CHECK(okPos, "Position and size change error");
 
 		UpdateWindow(explorerId);
+		UpdateWindow(m_windowId);
 	}
 
 	return success();

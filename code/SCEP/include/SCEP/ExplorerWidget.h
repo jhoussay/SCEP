@@ -35,9 +35,7 @@ signals:
 	void	closed();
 
 protected:
-	void 	moveEvent(QMoveEvent* pEvent) override;
-	void 	resizeEvent(QResizeEvent* pEvent) override;
-	void 	showEvent(QShowEvent* pEvent) override;
+	void	paintEvent(QPaintEvent* pEvent) override;
 
 private:
 	ErrorPtr updateEmbeddedWidget_p();
@@ -45,5 +43,7 @@ private:
 
 private:
 	ExplorerWrapper* p_wrapper = nullptr;
+	HWND m_windowId = 0;
+	bool m_visibleExplorer = false;
 	QWidget* p_widget = nullptr;
 };
