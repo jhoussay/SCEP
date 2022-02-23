@@ -18,7 +18,7 @@ ExplorerWrapper::~ExplorerWrapper()
 	finalize();
 }
 //
-ErrorPtr ExplorerWrapper::initialize(const QString& path)
+ErrorPtr ExplorerWrapper::initialize(Theme* /*ptr_theme*/, const QString& path)
 {
 	// Can we start ?
 	CHECK(p_webBrowser == nullptr, "Already initialized explorer wrapper.");

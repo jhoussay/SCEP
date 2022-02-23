@@ -6,6 +6,7 @@ TEMPLATE = app
 QT *= core gui widgets
 LIBS *= -lUxTheme
 include(../third_parties/gears/gears.prf)
+include(../third_parties/linkollector-win/linkollector-win.prf)
 
 # h
 INCLUDEPATH *= include

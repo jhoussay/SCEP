@@ -4,8 +4,8 @@
 //
 #include <QWidget>
 //
-//struct ExplorerWidgetData;	// PIMPL
 class ExplorerWrapper;
+class Theme;
 //
 /**
  *	@brief				
@@ -25,12 +25,13 @@ public:
 	virtual ~ExplorerWidget();
 
 public:
-	ErrorPtr init(const QString& path = {});
+	ErrorPtr init(Theme* ptr_theme, const QString& path = {});
 
 	ErrorPtr setCurrentPath(const QString& path);
 	QString currentPath() const;
 
 signals:
+	void	loading(QString path);
 	void	pathChanged(QString path);
 	void	closed();
 

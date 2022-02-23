@@ -6,6 +6,8 @@
 //
 #include <QObject>
 //
+class Theme;
+//
 class ExplorerWrapper : public QObject, public BrowserListener
 {
 	Q_OBJECT
@@ -15,7 +17,7 @@ public:
 	~ExplorerWrapper();
 
 public:
-	ErrorPtr initialize(const QString& path = {});
+	ErrorPtr initialize(Theme* ptr_theme, const QString& path = {});
 	HWND hwnd() const;
 	void setVisible(bool visible);
 	ErrorPtr setCurrentPath(const QString& path);
@@ -23,6 +25,7 @@ public:
 	ErrorPtr finalize();
 
 signals:
+	void loading(QString path);
 	void pathChanged(QString path);
 	void closed();
 

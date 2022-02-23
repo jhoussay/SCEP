@@ -5,6 +5,7 @@
 #include <QWidget>
 //
 class ExplorerWrapper2;
+class Theme;
 //
 /**
  *	@brief				
@@ -24,13 +25,15 @@ public:
 	virtual ~ExplorerWidget2();
 
 public:
-	ErrorPtr init(const QString& path = {});
+	ErrorPtr init(Theme* ptr_theme, const QString& path = {});
 
 	ErrorPtr setCurrentPath(const QString& path);
 	QString currentPath() const;
 
 signals:
+	void	loading(QString path);
 	void	pathChanged(QString path);
+	void	openNewTab(QString path);
 	void	closed();
 //
 //protected:

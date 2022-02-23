@@ -10,7 +10,9 @@ ExplorerWidget2::ExplorerWidget2(QWidget* pParent, Qt::WindowFlags f)
 	:	QWidget(pParent, f)
 {
 	p_wrapper = new ExplorerWrapper2();
+	connect(p_wrapper, SIGNAL(loading(QString)), this, SIGNAL(loading(QString)));
 	connect(p_wrapper, SIGNAL(pathChanged(QString)), this, SIGNAL(pathChanged(QString)));
+	connect(p_wrapper, SIGNAL(openNewTab(QString)), this, SIGNAL(openNewTab(QString)));
 	connect(p_wrapper, SIGNAL(closed()), this, SIGNAL(closed()));
 
 	setMinimumWidth(200);
@@ -21,15 +23,16 @@ ExplorerWidget2::~ExplorerWidget2()
 {
 	if (p_wrapper)
 	{
+		p_wrapper->finalize();
 		p_wrapper->Release();
 		p_wrapper = nullptr;
 	}
 }
 //
-ErrorPtr ExplorerWidget2::init(const QString& path)
+ErrorPtr ExplorerWidget2::init(Theme* ptr_theme, const QString& path)
 {
 	// Initialize the explorer
-	CALL( p_wrapper->initialize(path) );
+	CALL( p_wrapper->initialize(ptr_theme, path) );
 
 	// Create the embedding Qt widget
 	QWindow* pWindow = QWindow::fromWinId((WId) p_wrapper->hwnd());

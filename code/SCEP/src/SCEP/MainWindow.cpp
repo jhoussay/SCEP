@@ -9,11 +9,12 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QStandardPaths>
+#include <QLabel>
+#include <QMovie>
 //
 #ifdef FRAMELESS
 #include <QMouseEvent>
 #include <QPushButton>
-#include <QLabel>
 #endif //FRAMELESS
 //
 #define EXPLORER_WIDGET_VERSION 2
@@ -163,9 +164,11 @@ void MainWindow::addNewTab(QString path)
 	setUpdatesEnabled(false);
 
 	ExplorerWidget* pExplorerWidget = new ExplorerWidget();
+	connect(pExplorerWidget, SIGNAL(loading(QString)), this, SLOT(loading(QString)));
 	connect(pExplorerWidget, SIGNAL(pathChanged(QString)), this, SLOT(pathChanged(QString)));
+	connect(pExplorerWidget, SIGNAL(openNewTab(QString)), this, SLOT(addNewTab(QString)));
 	connect(pExplorerWidget, SIGNAL(closed()), this, SLOT(tabClosed()));
-	if (ErrorPtr pError = pExplorerWidget->init(path))
+	if (ErrorPtr pError = pExplorerWidget->init(ptr_theme, path))
 	{
 		displayError(pError);
 		delete pExplorerWidget;
@@ -183,6 +186,13 @@ void MainWindow::addNewTab(QString path)
 		pCloseButton->setMaximumSize( p_addTabButton->size() );
 		connect(pCloseButton, SIGNAL(clicked()), this, SLOT(onTabCloseRequested()));
 		p_ui->tabWidget->tabBar()->setTabButton(tabIndex, QTabBar::RightSide, pCloseButton);
+
+		QLabel* pLabel = new QLabel();
+		pLabel->setText({});
+		pLabel->setMinimumSize( 20, 20 );
+		pLabel->setMaximumSize( 20, 20 );
+		pLabel->setScaledContents(true);
+		p_ui->tabWidget->tabBar()->setTabButton(tabIndex, QTabBar::LeftSide, pLabel);
 
 		p_ui->tabWidget->setCurrentIndex(tabIndex);
 	}
@@ -237,6 +247,28 @@ void MainWindow::onTabCloseRequested()
 	}
 }
 //
+void MainWindow::loading(QString path)
+{
+	if (ExplorerWidget* pExplorerWidget = dynamic_cast<ExplorerWidget*>(sender()))
+	{
+		for (int tabIndex = 0; tabIndex < p_ui->tabWidget->count(); tabIndex++)
+		{
+			if (p_ui->tabWidget->widget(tabIndex) == pExplorerWidget)
+			{
+				QLabel* pLabel = dynamic_cast<QLabel*>(p_ui->tabWidget->tabBar()->tabButton(tabIndex, QTabBar::LeftSide));
+				if (pLabel)
+				{
+					QMovie* pMovie = new QMovie(":/SCEP/icons/buffering2.gif", QByteArray(), pLabel);
+					pLabel->setMovie(pMovie);
+					pMovie->start();
+				}
+
+				break;
+			}
+		}
+	}
+}
+//
 void MainWindow::pathChanged(QString path)
 {
 	if (ExplorerWidget* pExplorerWidget = dynamic_cast<ExplorerWidget*>(sender()))
@@ -246,6 +278,11 @@ void MainWindow::pathChanged(QString path)
 			if (p_ui->tabWidget->widget(tabIndex) == pExplorerWidget)
 			{
 				p_ui->tabWidget->setTabText(tabIndex, tabName(path));
+
+				QLabel* pLabel = dynamic_cast<QLabel*>(p_ui->tabWidget->tabBar()->tabButton(tabIndex, QTabBar::LeftSide));
+				if (pLabel)
+					pLabel->setMovie({});
+
 				break;
 			}
 		}
@@ -257,7 +294,16 @@ void MainWindow::tabClosed()
 	// TODO
 }
 //
-void MainWindow::closeTab(int tabIndex)
+void MainWindow::closeEvent(QCloseEvent* pEvent)
+{
+	while (p_ui->tabWidget->count() > 0)
+	{
+		closeTab(0, false);
+	}
+	QMainWindow::closeEvent(pEvent);
+}
+//
+void MainWindow::closeTab(int tabIndex, bool closeAppIfNoRemainingTab)
 {
 	if (tabIndex >= 0)
 	{
@@ -267,7 +313,7 @@ void MainWindow::closeTab(int tabIndex)
 			delete pWidget;
 			pWidget = nullptr;
 
-			if (p_ui->tabWidget->count() == 0)
+			if (closeAppIfNoRemainingTab && p_ui->tabWidget->count() == 0)
 				close();
 		}
 	}
@@ -281,8 +327,6 @@ void MainWindow::updateIcons()
 	p_closeTabAction->setIcon( ptr_theme->icon(Theme::Icon::CloseTab) );
 
 	p_menuButton->setIcon( ptr_theme->icon(Theme::Icon::Menu) );
-
-	
 }
 //
 QString MainWindow::tabName(const QString& tabPath)

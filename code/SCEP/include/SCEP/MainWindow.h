@@ -46,11 +46,15 @@ protected slots:
 
 	void	onTabCloseRequested();
 
+	void	loading(QString path);
 	void	pathChanged(QString path);
 	void	tabClosed();
 
+protected:
+	void	closeEvent(QCloseEvent* pEvent) override;
+
 private:
-	void	closeTab(int tabIndex);
+	void	closeTab(int tabIndex, bool closeAppIfNoRemainingTab = true);
 	void	updateIcons();
 	static QString tabName(const QString& tabPath);
 
@@ -64,8 +68,6 @@ private:
 
 	QToolButton* p_addTabButton = nullptr;
 	QToolButton* p_menuButton = nullptr;
-
-
 
 #ifdef FRAMELESS
 	std::optional<QPoint> m_dragPosition;

@@ -64,6 +64,7 @@ ExplorerWidget::ExplorerWidget(QWidget* pParent, Qt::WindowFlags f)
 	:	QWidget(pParent, f)
 {
 	p_wrapper = new ExplorerWrapper();
+	connect(p_wrapper, SIGNAL(loading(QString)), this, SIGNAL(loading(QString)));
 	connect(p_wrapper, SIGNAL(pathChanged(QString)), this, SIGNAL(pathChanged(QString)));
 	connect(p_wrapper, SIGNAL(closed()), this, SIGNAL(closed()));
 
@@ -73,14 +74,17 @@ ExplorerWidget::ExplorerWidget(QWidget* pParent, Qt::WindowFlags f)
 //
 ExplorerWidget::~ExplorerWidget()
 {
-	delete p_wrapper;
-	p_wrapper = nullptr;
+	if (p_wrapper)
+	{
+		delete p_wrapper;
+		p_wrapper = nullptr;
+	}
 }
 //
-ErrorPtr ExplorerWidget::init(const QString& path)
+ErrorPtr ExplorerWidget::init(Theme* ptr_theme, const QString& path)
 {
 	// Initialize the explorer
-	CALL( p_wrapper->initialize(path) );
+	CALL( p_wrapper->initialize(ptr_theme, path) );
 
 	// The trick !!!
 	// - new win32 window (proxy) -> can embed a window from another process
