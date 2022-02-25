@@ -3,6 +3,7 @@
 #include <SCEP/Error.h>
 //
 #include <QObject>
+#include <QDateTime>
 //
 #include <windows.h>
 #include <shobjidl_core.h>
@@ -49,11 +50,7 @@ private:
 	static INT_PTR CALLBACK s_WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	INT_PTR wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	ErrorPtr onInitialize(const QString& path);
-	//ErrorPtr onOpenItem();
-	//ErrorPtr onSelChange();
-	//ErrorPtr getSelectedItem(REFIID riid, void **ppv);
-
-	//ErrorPtr getItem(WORD x, WORD y, REFIID riid, void **ppv);
+	ErrorPtr getSelectedItem(REFIID riid, void **ppv);
 
 	static LRESULT CALLBACK ShellWindowProcHook(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
 	HMENU CreateCustomPopupMenu();
@@ -73,5 +70,7 @@ private:
 	WNDPROC p_shellWindowProcOld = nullptr;
 	IContextMenu2 *p_contextMenu2 = NULL;
 	QString m_contextMenuFocusedPath = NULL;
+
+	std::optional<QDateTime> m_middleClickDateTime;
 };
 //

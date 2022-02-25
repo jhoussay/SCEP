@@ -6,6 +6,7 @@
 //
 #include <QUrl>
 #include <QFileInfo>
+#include <QTimer>
 #include <QtDebug>
 //
 #include <shobjidl.h>
@@ -68,28 +69,6 @@ inline IShellItem* CreateShellItem(const QString& path)
 	return nullptr;
 }
 //
-//inline HRESULT GetItemFromView(IFolderView2 *pfv, int iItem, REFIID riid, void **ppv)
-//{
-//	*ppv = nullptr;
-//
-//	HRESULT hr = S_OK;
-//
-//	if (iItem == -1)
-//	{
-//		hr = pfv->GetSelectedItem(-1, &iItem); // Returns S_FALSE if none selected
-//	}
-//
-//	if (S_OK == hr)
-//	{
-//		hr = pfv->GetItem(iItem, riid, ppv);
-//	}
-//	else
-//	{
-//		hr = E_FAIL;
-//	}
-//	return hr;
-//}
-////
 //inline ErrorPtr ShellExecuteItem(HWND hwnd, PCWSTR pszVerb, IShellItem *psi)
 //{
 //	// how to activate a shell item, use ShellExecute().
@@ -364,42 +343,6 @@ LRESULT CALLBACK ExplorerWrapper2::wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, 
 		}
 		RedrawWindow(m_hwnd, nullptr, nullptr, RDW_INVALIDATE);
 		break;
-	/*case WM_PARENTNOTIFY:
-	{
-		WORD event = LOWORD(wParam);
-		switch (event)
-		{
-		case WM_RBUTTONDOWN:
-		{
-			WORD x = LOWORD(lParam);
-			WORD y = HIWORD(lParam);
-			qDebug() << "WM_RBUTTONDOWN (" << x << ", " << y << ")";
-			IShellItem* psi = nullptr;
-			[[maybe_unused]] ErrorPtr pError = getItem(x, y, IID_PPV_ARGS(&psi));
-		
-			// TODO handle context menu request
-			// For now, just use the default implementation
-			iRet = DefWindowProc(hwnd, uMsg, wParam, lParam);
-			break;
-		}
-		case WM_MBUTTONDOWN:
-		{
-			//WORD x = LOWORD(lParam);
-			//WORD y = HIWORD(lParam);
-			//qDebug() << "WM_MBUTTONDOWN (" << x << ", " << y << ")";
-			//IShellItem* psi = nullptr;
-			//[[maybe_unused]] ErrorPtr pError = getItem(x, y, IID_PPV_ARGS(&psi));
-
-			// TODO handle open in the tab request
-			iRet = DefWindowProc(hwnd, uMsg, wParam, lParam);
-			break;
-		}
-		default:
-			iRet = DefWindowProc(hwnd, uMsg, wParam, lParam);
-			break;
-		}
-		break;
-	}*/
 	default:
 		iRet = DefWindowProc(hwnd, uMsg, wParam, lParam);
 		break;
@@ -409,112 +352,89 @@ LRESULT CALLBACK ExplorerWrapper2::wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, 
 //
 ErrorPtr ExplorerWrapper2::onInitialize(const QString& path)
 {
+	// Get window size
 	RECT rc = GetWindowRectInClient(m_hwnd);
 
+	// Create IExplorerBrowser
 	HRESULT hr = CoCreateInstance(CLSID_ExplorerBrowser, nullptr, CLSCTX_INPROC, IID_PPV_ARGS(&p_peb));
 	CHECK(SUCCEEDED(hr), "Could not create explorer browser : " + GetLastErrorAsString());
 
+	// Register
 	// note, SetSite(nullptr) happens in finalize()
-	IUnknown_SetSite(p_peb, static_cast<IServiceProvider *>(this));
+	IUnknown_SetSite(p_peb, static_cast<IServiceProvider*>(this));
 
+	// Initialize IExplorerBrowser
 	FOLDERSETTINGS fs = {};
 	fs.ViewMode = FVM_AUTO;
 	fs.fFlags = FWF_AUTOARRANGE | FWF_NOWEBVIEW;
-
 	hr = p_peb->Initialize(m_hwnd, &rc, &fs);
 	CHECK(SUCCEEDED(hr), "Could not initialize explorer browser : " + GetLastErrorAsString());
+	p_peb->SetOptions(EBO_SHOWFRAMES);
 
+	// Initialize IExplorerBrowserEvents
 	hr = p_peb->Advise(this, &m_dwCookie);
 	CHECK(SUCCEEDED(hr), "Could not finish explorer browser initialization : " + GetLastErrorAsString());
 
-	p_peb->SetOptions(EBO_SHOWFRAMES);
-
+	// Set initial path
 	CALL( setCurrentPath(path) );
 
 	return success();
 }
-////
-//ErrorPtr ExplorerWrapper2::getSelectedItem(REFIID riid, void **ppv)
-//{
-//	*ppv = nullptr;
-//	CHECK(p_peb, "ExplorerWrapper2::getSelectedItem() : No current instance.");
 //
-//	IFolderView2* pfv = nullptr;
-//	HRESULT hr = p_peb->GetCurrentView(IID_PPV_ARGS(&pfv));
-//	CHECK(SUCCEEDED(hr), "Could not get current view : " + GetLastErrorAsString());
-//
-//	hr = GetItemFromView(pfv, -1, riid, ppv);
-//	pfv->Release();
-//	CHECK(SUCCEEDED(hr), "Could not get current item in current view : " + GetLastErrorAsString());
-//
-//	return success();
-//}
-////
-//ErrorPtr ExplorerWrapper2::onSelChange()
-//{
-//	IShellItem *psi = nullptr;
-//	CALL( getSelectedItem(IID_PPV_ARGS(&psi)) );
-//
-//	PWSTR pszName = nullptr;
-//	HRESULT hr = psi->GetDisplayName(SIGDN_NORMALDISPLAY, &pszName);
-//	psi->Release();
-//	CHECK(SUCCEEDED(hr), "Could not get display name : " + GetLastErrorAsString());
-//
-//	//SetDlgItemText(_hdlg, IDC_NAME, pszName);
-//	CoTaskMemFree(pszName);
-//
-//	return success();
-//}
-////
-//ErrorPtr ExplorerWrapper2::onOpenItem()
-//{
-//	IShellItem *psi = nullptr;
-//
-//	CALL( getSelectedItem(IID_PPV_ARGS(&psi)) );
-//	CALL( ShellExecuteItem(m_hwnd, nullptr, psi) );
-//
-//	psi->Release();
-//
-//	return success();
-//}
-////
-//ErrorPtr ExplorerWrapper2::getItem(WORD x, WORD y, REFIID riid, void **ppv)
-//{
-//	*ppv = nullptr;
-//	CHECK(p_peb, "ExplorerWrapper2::getItem() : No current instance.");
-//	
-//	IFolderView2* pfv = nullptr;
-//	HRESULT hr = p_peb->GetCurrentView(IID_PPV_ARGS(&pfv));
-//	CHECK(SUCCEEDED(hr), "Could not get current view : " + GetLastErrorAsString());
-//	
-//	hr = GetItemFromView(pfv, -1, riid, ppv);
-//	pfv->Release();
-//	CHECK(SUCCEEDED(hr), "Could not get current item in current view : " + GetLastErrorAsString());
-//	
-//
-//
-//	return success();
-//}
+ErrorPtr ExplorerWrapper2::getSelectedItem(REFIID riid, void **ppv)
+{
+	// Check
+	*ppv = nullptr;
+	CHECK(p_peb && p_psv, "ExplorerWrapper2::getSelectedItem() : No current instance.");
+
+	// Get current view
+	IFolderView2* pfv = nullptr;
+	HRESULT hr = p_peb->GetCurrentView(IID_PPV_ARGS(&pfv));
+	CHECK(SUCCEEDED(hr), "Could not get current view : " + GetLastErrorAsString());
+
+	// Get current item in current view
+	int iItem = -1;
+	hr = pfv->GetSelectedItem(-1, &iItem); // Returns S_FALSE if none selected
+	if (SUCCEEDED(hr))
+	{
+		hr = pfv->GetItem(iItem, riid, ppv);
+	}
+	pfv->Release();
+	CHECK(SUCCEEDED(hr), "Could not get current item in current view : " + GetLastErrorAsString());
+
+	return success();
+}
 //
 #define MIN_SHELL_ID 1
 #define MAX_SHELL_ID 30000
 //
-LRESULT CALLBACK ExplorerWrapper2::ShellWindowProcHook(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+LRESULT CALLBACK ExplorerWrapper2::ShellWindowProcHook(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	ExplorerWrapper2* pThis = (ExplorerWrapper2*) GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
-	switch (msg)
+	switch (uMsg)
 	{
 	case WM_CONTEXTMENU:
 	{
+		// Generate a context menu on the clicked item with additional custom entries
+
+		// Create the context menu
 		HMENU hmenu = pThis->CreateCustomPopupMenu();
 		if (hmenu != nullptr)
 		{
+			// Show the context menu and get the selected item
 			HWND hwndshell;
 			pThis->p_psv->GetWindow(&hwndshell);
-			long shellId = TrackPopupMenu(hmenu, TPM_RETURNCMD | TPM_LEFTALIGN, GET_X_LPARAM(lp), GET_Y_LPARAM(lp), 0, hwndshell, nullptr);
+			long shellId = TrackPopupMenu(	hmenu,
+											TPM_RETURNCMD | TPM_LEFTALIGN,
+											GET_X_LPARAM(lParam),
+											GET_Y_LPARAM(lParam),
+											0,
+											hwndshell, 
+											nullptr	);
 			CloseHandle(hmenu);
 
+			// Handle a regular choice
 			if ((shellId >= 0) && (shellId <= MAX_SHELL_ID))
 			{
 				CMINVOKECOMMANDINFO ici;
@@ -526,21 +446,93 @@ LRESULT CALLBACK ExplorerWrapper2::ShellWindowProcHook(HWND hwnd, UINT msg, WPAR
 				HRESULT hr1 = pThis->p_contextMenu2->InvokeCommand(&ici);
 
 			}
+			// Handle a custom choice
 			else if (shellId > MAX_SHELL_ID)
 			{
 				pThis->notifyContextMenuCustomOption(shellId - MAX_SHELL_ID - 1, pThis->m_contextMenuFocusedPath);
 				pThis->m_contextMenuFocusedPath = {};
 			}
+			// Clean up
 			pThis->p_contextMenu2->Release();
 			pThis->p_contextMenu2 = nullptr;
 		}
 		return 0; // handled
 	}
+	case WM_PARENTNOTIFY:
+	{
+		// Handle middle clicks and request a new tab if the click corresponds to an existing folder
+		if (LOWORD(wParam) == WM_MBUTTONDOWN)
+		{
+			// Register the middle click
+			pThis->m_middleClickDateTime = QDateTime::currentDateTime();
+		
+			// Simulate a left click a the same position in order to select the item
+			// --> Handled through the win32 message loop
+			INPUT input;
+			input.type = INPUT_MOUSE;
+			input.mi.dx = 0;
+			input.mi.dy = 0;
+			input.mi.mouseData = 0;
+			input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+			input.mi.time = 0;
+			input.mi.dwExtraInfo = 0;
+			SendInput(1, &input, sizeof(INPUT));
+		
+			// Request a new tab on the newly selected item
+			// --> Handled through the Qt event loop
+			// --> Seems to always be handled AFTER the win32 input message !
+			QTimer::singleShot(0, [=]()
+			{
+				// Are we dealing with a middle click ?
+				if (pThis->m_middleClickDateTime.has_value())
+				{
+					static constexpr qint64 DelayMs = 200;
+		
+					// Is the click recent enough ?
+					const QDateTime middleClickDateTime = pThis->m_middleClickDateTime.value();
+					if (middleClickDateTime.msecsTo(QDateTime::currentDateTime()) < DelayMs)
+					{
+						// Get the selected item
+						IShellItem* psi = nullptr;
+						ErrorPtr pError = pThis->getSelectedItem(IID_PPV_ARGS(&psi));
+						if (! pError)
+						{
+							// Get the name of the selected item
+							PWSTR pszName = nullptr;
+							HRESULT hr = psi->GetDisplayName(SIGDN_NORMALDISPLAY, &pszName);
+							if (SUCCEEDED(hr))
+							{
+								// Path of the clicked item
+								QString path = pThis->currentPath() + "/" + QString::fromWCharArray(pszName);
+		
+								// Ask for a new tab if the clicked item corresponds to an existing folder
+								QFileInfo fi(path);
+								if (fi.exists() && fi.isDir())
+								{
+									emit pThis->openNewTab(path);
+								}
+							}
+							// Release
+							if (pszName)
+								CoTaskMemFree(pszName);
+						}
+						// Release
+						if (psi)
+							psi->Release();
+					}
+		
+					// Clean up
+					pThis->m_middleClickDateTime = std::nullopt;
+				}
+			});
+		}
+		break;
+	}
 	default:
 		break;
 	}
 
-	return CallWindowProc(pThis->p_shellWindowProcOld, hwnd, msg, wp, lp);
+	return CallWindowProc(pThis->p_shellWindowProcOld, hwnd, uMsg, wParam, lParam);
 }
 //
 QString GetDisplayNameOf(IShellFolder* shellFolder, LPITEMIDLIST pidl, SHGDNF /*uFlags*/)

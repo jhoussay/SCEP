@@ -192,6 +192,7 @@ void MainWindow::addNewTab(QString path)
 		pLabel->setMinimumSize( 20, 20 );
 		pLabel->setMaximumSize( 20, 20 );
 		pLabel->setScaledContents(true);
+		pLabel->setPixmap(m_fileIconProvider.icon(QFileInfo(path)).pixmap(QSize(32, 32)));
 		p_ui->tabWidget->tabBar()->setTabButton(tabIndex, QTabBar::LeftSide, pLabel);
 
 		p_ui->tabWidget->setCurrentIndex(tabIndex);
@@ -258,6 +259,7 @@ void MainWindow::loading(QString path)
 				QLabel* pLabel = dynamic_cast<QLabel*>(p_ui->tabWidget->tabBar()->tabButton(tabIndex, QTabBar::LeftSide));
 				if (pLabel)
 				{
+					pLabel->setPixmap({});
 					QMovie* pMovie = new QMovie(":/SCEP/icons/buffering2.gif", QByteArray(), pLabel);
 					pLabel->setMovie(pMovie);
 					pMovie->start();
@@ -281,7 +283,10 @@ void MainWindow::pathChanged(QString path)
 
 				QLabel* pLabel = dynamic_cast<QLabel*>(p_ui->tabWidget->tabBar()->tabButton(tabIndex, QTabBar::LeftSide));
 				if (pLabel)
+				{
 					pLabel->setMovie({});
+					pLabel->setPixmap(m_fileIconProvider.icon(QFileInfo(path)).pixmap(QSize(32, 32)));
+				}
 
 				break;
 			}

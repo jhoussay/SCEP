@@ -3,6 +3,7 @@
 #include <SCEP/Theme.h>
 //
 #include <QMainWindow>
+#include <QFileIconProvider>
 //
 //#define FRAMELESS
 //
@@ -68,6 +69,8 @@ private:
 
 	QToolButton* p_addTabButton = nullptr;
 	QToolButton* p_menuButton = nullptr;
+
+	QFileIconProvider m_fileIconProvider;
 
 #ifdef FRAMELESS
 	std::optional<QPoint> m_dragPosition;
