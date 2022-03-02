@@ -1,16 +1,18 @@
 <RCC>
-  <qresource prefix="/">
-    <file>SCEP/icons/buffering.gif</file>
-    <file>SCEP/icons/buffering2.gif</file>
-    <file>SCEP/icons/menu-48-dark.png</file>
-    <file>SCEP/icons/menu-48-light.png</file>
-    <file>SCEP/icons/plus-48-dark.png</file>
-    <file>SCEP/icons/plus-48-light.png</file>
-    <file>SCEP/icons/close-48-dark.png</file>
-    <file>SCEP/icons/close-48-light.png</file>
-    <file>SCEP/images/SCEP-full.png</file>
-    <file>SCEP/images/SCEP-simple.png</file>
-    <file>SCEP/icons/about-48-dark.png</file>
-    <file>SCEP/icons/about-48-light.png</file>
-  </qresource>
+    <qresource prefix="/">
+        <file>SCEP/icons/buffering.gif</file>
+        <file>SCEP/icons/buffering2.gif</file>
+        <file>SCEP/icons/menu-48-dark.png</file>
+        <file>SCEP/icons/menu-48-light.png</file>
+        <file>SCEP/icons/plus-48-dark.png</file>
+        <file>SCEP/icons/plus-48-light.png</file>
+        <file>SCEP/icons/close-48-dark.png</file>
+        <file>SCEP/icons/close-48-light.png</file>
+        <file>SCEP/images/SCEP-full.png</file>
+        <file>SCEP/images/SCEP-simple.png</file>
+        <file>SCEP/icons/about-48-dark.png</file>
+        <file>SCEP/icons/about-48-light.png</file>
+        <file>SCEP/icons/iconfinder_icon-ios7-arrow-left_211689.png</file>
+        <file>SCEP/icons/iconfinder_icon-ios7-arrow-right_211607.png</file>
+    </qresource>
 </RCC>
