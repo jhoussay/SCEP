@@ -154,7 +154,7 @@ void MainWindow::mouseMoveEvent(QMouseEvent* pEvent)
 //
 #endif //FRAMELESS
 //
-void MainWindow::addNewTab(QString path)
+void MainWindow::addNewTab(QString path, NewTabPosition position, NewTabBehaviour behaviour)
 {
 	if (path.isEmpty())
 	{
@@ -166,7 +166,7 @@ void MainWindow::addNewTab(QString path)
 	ExplorerWidget* pExplorerWidget = new ExplorerWidget();
 	connect(pExplorerWidget, SIGNAL(loading(QString)), this, SLOT(loading(QString)));
 	connect(pExplorerWidget, SIGNAL(pathChanged(QString)), this, SLOT(pathChanged(QString)));
-	connect(pExplorerWidget, SIGNAL(openNewTab(QString)), this, SLOT(addNewTab(QString)));
+	connect(pExplorerWidget, SIGNAL(openNewTab(QString, NewTabPosition, NewTabBehaviour)), this, SLOT(addNewTab(QString, NewTabPosition, NewTabBehaviour)));
 	connect(pExplorerWidget, SIGNAL(closed()), this, SLOT(tabClosed()));
 	if (ErrorPtr pError = pExplorerWidget->init(ptr_theme, path))
 	{
@@ -176,9 +176,13 @@ void MainWindow::addNewTab(QString path)
 	}
 	else
 	{
-		p_ui->tabWidget->addTab(pExplorerWidget, tabName(pExplorerWidget->currentPath()));
+		int tabIndex = p_ui->tabWidget->count();
+		if ( (position == NewTabPosition::AfterCurrent) && (p_ui->tabWidget->count() > 0) )
+		{
+			tabIndex = p_ui->tabWidget->currentIndex() + 1;
+		}
+		p_ui->tabWidget->insertTab(tabIndex, pExplorerWidget, tabName(pExplorerWidget->currentPath()));
 
-		int tabIndex = p_ui->tabWidget->count()-1;
 		QToolButton* pCloseButton = new QToolButton();
 		pCloseButton->setToolTip(tr("Close tab"));
 		pCloseButton->setAutoRaise(true);
@@ -195,7 +199,8 @@ void MainWindow::addNewTab(QString path)
 		pLabel->setPixmap(m_fileIconProvider.icon(QFileInfo(path)).pixmap(QSize(32, 32)));
 		p_ui->tabWidget->tabBar()->setTabButton(tabIndex, QTabBar::LeftSide, pLabel);
 
-		p_ui->tabWidget->setCurrentIndex(tabIndex);
+		if (behaviour == NewTabBehaviour::Current)
+			p_ui->tabWidget->setCurrentIndex(tabIndex);
 	}
 
 	setUpdatesEnabled(true);
@@ -248,7 +253,7 @@ void MainWindow::onTabCloseRequested()
 	}
 }
 //
-void MainWindow::loading(QString path)
+void MainWindow::loading(const QString& path)
 {
 	if (ExplorerWidget* pExplorerWidget = dynamic_cast<ExplorerWidget*>(sender()))
 	{
@@ -271,7 +276,7 @@ void MainWindow::loading(QString path)
 	}
 }
 //
-void MainWindow::pathChanged(QString path)
+void MainWindow::pathChanged(const QString& path)
 {
 	if (ExplorerWidget* pExplorerWidget = dynamic_cast<ExplorerWidget*>(sender()))
 	{
@@ -287,6 +292,8 @@ void MainWindow::pathChanged(QString path)
 					pLabel->setMovie({});
 					pLabel->setPixmap(m_fileIconProvider.icon(QFileInfo(path)).pixmap(QSize(32, 32)));
 				}
+
+
 
 				break;
 			}

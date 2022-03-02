@@ -1,9 +1,12 @@
 ﻿#pragma once
 //
 #include <SCEP/Error.h>
+#include <SCEP/SCEP.h>
 //
 #include <QObject>
 #include <QDateTime>
+//
+#include <optional>
 //
 #include <windows.h>
 #include <shobjidl_core.h>
@@ -43,7 +46,7 @@ public:
 signals:
 	void loading(QString path);
 	void pathChanged(QString path);
-	void openNewTab(QString path);
+	void openNewTab(QString path, NewTabPosition position, NewTabBehaviour behaviour);
 	void closed();
 
 private:

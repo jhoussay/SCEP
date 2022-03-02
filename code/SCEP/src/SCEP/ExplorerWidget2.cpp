@@ -12,7 +12,7 @@ ExplorerWidget2::ExplorerWidget2(QWidget* pParent, Qt::WindowFlags f)
 	p_wrapper = new ExplorerWrapper2();
 	connect(p_wrapper, SIGNAL(loading(QString)), this, SIGNAL(loading(QString)));
 	connect(p_wrapper, SIGNAL(pathChanged(QString)), this, SIGNAL(pathChanged(QString)));
-	connect(p_wrapper, SIGNAL(openNewTab(QString)), this, SIGNAL(openNewTab(QString)));
+	connect(p_wrapper, SIGNAL(openNewTab(QString, NewTabPosition, NewTabBehaviour)), this, SIGNAL(openNewTab(QString, NewTabPosition, NewTabBehaviour)));
 	connect(p_wrapper, SIGNAL(closed()), this, SIGNAL(closed()));
 
 	setMinimumWidth(200);

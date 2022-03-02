@@ -6,6 +6,7 @@
 //
 #include <QApplication>
 #include <QFile>
+#include <QtDebug>
 //
 QString getFullPath(const QString& fileName, const QStringList& directories)
 {

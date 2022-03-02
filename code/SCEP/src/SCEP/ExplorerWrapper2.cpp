@@ -9,6 +9,8 @@
 #include <QTimer>
 #include <QtDebug>
 //
+#include <array>
+//
 #include <shobjidl.h>
 #include <shlwapi.h>
 #include <knownfolders.h>
@@ -69,34 +71,11 @@ inline IShellItem* CreateShellItem(const QString& path)
 	return nullptr;
 }
 //
-//inline ErrorPtr ShellExecuteItem(HWND hwnd, PCWSTR pszVerb, IShellItem *psi)
-//{
-//	// how to activate a shell item, use ShellExecute().
-//	PIDLIST_ABSOLUTE pidl;
-//	HRESULT hr = SHGetIDListFromObject(psi, &pidl);
-//	CHECK(SUCCEEDED(hr), "Could not get absolute ID list from current item : " + GetLastErrorAsString());
-//	
-//	SHELLEXECUTEINFO ei = { sizeof(ei) };
-//	ei.fMask = SEE_MASK_INVOKEIDLIST;
-//	ei.hwnd = hwnd;
-//	ei.nShow = SW_NORMAL;
-//	ei.lpIDList = pidl;
-//	ei.lpVerb = pszVerb;
-//
-//	BOOL ok = ShellExecuteEx(&ei);
-//	CoTaskMemFree(pidl);
-//
-//	CHECK(ok == TRUE, "Could not execute : " + GetLastErrorAsString());
-//
-//	return success();
-//}
-//
 inline QString path(PCIDLIST_ABSOLUTE pidlFolder)
 {
 	static constexpr int BufferfSize = 4096;
 	std::array<wchar_t, BufferfSize> fullPath;
 	SHGetPathFromIDList(pidlFolder, fullPath.data());
-
 	return QString::fromWCharArray(fullPath.data());
 }
 //
@@ -155,11 +134,10 @@ ErrorPtr ExplorerWrapper2::initialize(Theme* ptr_theme, const QString& path)
 	CHECK(m_hwnd != nullptr, GetLastErrorAsString());
 
 	// Dark mode
-	if (ptr_theme)
+	if (ptr_theme && (ptr_theme->type() == Theme::Type::Dark) )
 	{
-		using namespace linkollector::win;
-		init_dark_mode_support();
-		enable_dark_mode(m_hwnd, ptr_theme->type() == Theme::Type::Dark);
+		linkollector::win::init_dark_mode_support();
+		linkollector::win::enable_dark_mode(m_hwnd, true);
 	}
 
 	CALL( onInitialize(path) );
@@ -267,12 +245,19 @@ IFACEMETHODIMP ExplorerWrapper2::QueryService(REFGUID guidService, REFIID riid, 
 //
 IFACEMETHODIMP ExplorerWrapper2::OnViewCreated(IShellView * psv)
 {
+	// Store the shell view
 	p_psv = psv;
+
+	// Get the corresponding window
 	HWND hwndshell;
 	HRESULT hr = psv->GetWindow(&hwndshell);
 
-	SetWindowLongPtr(hwndshell, GWLP_USERDATA, (LONG_PTR) this);
-	p_shellWindowProcOld = (WNDPROC) SetWindowLongPtr(hwndshell, GWLP_WNDPROC, (LONG_PTR) ShellWindowProcHook);
+	// Hook the window : set the new window procedure and the corresponding user data
+	if (SUCCEEDED(hr))
+	{
+		SetWindowLongPtr(hwndshell, GWLP_USERDATA, (LONG_PTR) this);
+		p_shellWindowProcOld = (WNDPROC) SetWindowLongPtr(hwndshell, GWLP_WNDPROC, (LONG_PTR) ShellWindowProcHook);
+	}
 
 	return S_OK;
 }
@@ -303,22 +288,24 @@ IFACEMETHODIMP ExplorerWrapper2::OnNavigationFailed(PCIDLIST_ABSOLUTE /* pidlFol
 //
 INT_PTR CALLBACK ExplorerWrapper2::s_WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	ExplorerWrapper2 *pssa = nullptr;
+	// Get (and store on CREATE) the current instance
+	ExplorerWrapper2* pThis = nullptr;
 	if (uMsg == WM_CREATE)
 	{
-		if (pssa = (ExplorerWrapper2*) LPCREATESTRUCT(lParam)->lpCreateParams)
+		if (pThis = (ExplorerWrapper2*) LPCREATESTRUCT(lParam)->lpCreateParams)
 		{
-			SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR) pssa);
+			SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR) pThis);
 		}
 	}
 	else
 	{
-		pssa = (ExplorerWrapper2*) GetWindowLongPtr(hwnd, GWLP_USERDATA);
+		pThis = (ExplorerWrapper2*) GetWindowLongPtr(hwnd, GWLP_USERDATA);
 	}
 
-	if (pssa)
+	// Call the window procedure
+	if (pThis)
 	{
-		return pssa->wndProc(hwnd, uMsg, wParam, lParam);
+		return pThis->wndProc(hwnd, uMsg, wParam, lParam);
 	}
 	else
 	{
@@ -450,7 +437,7 @@ LRESULT CALLBACK ExplorerWrapper2::ShellWindowProcHook(HWND hwnd, UINT uMsg, WPA
 			else if (shellId > MAX_SHELL_ID)
 			{
 				pThis->notifyContextMenuCustomOption(shellId - MAX_SHELL_ID - 1, pThis->m_contextMenuFocusedPath);
-				pThis->m_contextMenuFocusedPath = {};
+				pThis->m_contextMenuFocusedPath = QString();
 			}
 			// Clean up
 			pThis->p_contextMenu2->Release();
@@ -509,14 +496,14 @@ LRESULT CALLBACK ExplorerWrapper2::ShellWindowProcHook(HWND hwnd, UINT uMsg, WPA
 								QFileInfo fi(path);
 								if (fi.exists() && fi.isDir())
 								{
-									emit pThis->openNewTab(path);
+									emit pThis->openNewTab(path, NewTabPosition::AfterCurrent, NewTabBehaviour::None);
 								}
 							}
-							// Release
+							// Clean up
 							if (pszName)
 								CoTaskMemFree(pszName);
 						}
-						// Release
+						// Clean up
 						if (psi)
 							psi->Release();
 					}
@@ -650,7 +637,7 @@ void ExplorerWrapper2::notifyContextMenuCustomOption(int iOption, const QString&
 		QFileInfo fi(contextMenuFocusedPath);
 		if (fi.exists() && fi.isDir())
 		{
-			emit openNewTab(contextMenuFocusedPath);
+			emit openNewTab(contextMenuFocusedPath, NewTabPosition::AfterCurrent, NewTabBehaviour::None);
 		}
 	}
 }

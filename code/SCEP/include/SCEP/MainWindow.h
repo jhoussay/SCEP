@@ -1,5 +1,6 @@
 ﻿#pragma once
 //
+#include <SCEP/SCEP.h>
 #include <SCEP/Theme.h>
 //
 #include <QMainWindow>
@@ -19,6 +20,10 @@ namespace Ui
 	class MainWindow;
 }
 //
+/**
+ *	@ingroup				SCEP
+ *	@brief					SCEP main window
+ */
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
@@ -40,15 +45,15 @@ protected:
 #endif //FRAMELESS
 
 protected slots:
-	void	addNewTab(QString path = {});
+	void	addNewTab(QString path = {}, NewTabPosition position = NewTabPosition::Last, NewTabBehaviour behaviour = NewTabBehaviour::Current);
 	void	closeCurrentTab();
 	void	showMenu();
 	void	about();
 
 	void	onTabCloseRequested();
 
-	void	loading(QString path);
-	void	pathChanged(QString path);
+	void	loading(const QString& path);
+	void	pathChanged(const QString& path);
 	void	tabClosed();
 
 protected:
