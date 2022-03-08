@@ -31,7 +31,7 @@ QString GetLastErrorAsString()
 //
 QString getPathLabel(const QString& path)
 {
-	QString nativePath = QFileInfo(path).canonicalFilePath().replace("/", "\\");
+	QString nativePath = QFileInfo(path).absoluteFilePath().replace("/", "\\");
 	std::wstring wpath = nativePath.toStdWString();
 
 	ITEMIDLIST* idlist;

@@ -31,6 +31,12 @@ public:
 		Dirs
 	};
 
+	enum class Mode
+	{
+		Completer,
+		Lister
+	};
+
 	using IconProviderFn = std::function<QIcon(const QString&)>;
 
 public:
@@ -46,7 +52,7 @@ public:
 	 */
 	QStringList				get_file_list(const QString& path) const;
 
-	void					setPathPrefix(const QString& prefix);
+	void					setPathPrefix(QString prefix, Mode mode);
 
 private:
 	std::optional<QString>	m_current_path;

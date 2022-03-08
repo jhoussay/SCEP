@@ -20,10 +20,10 @@ HEADERS += include/SCEP/MainWindow.h
 HEADERS += include/SCEP/Theme.h
 HEADERS += include/SCEP/AboutDialog.h
 HEADERS += include/SCEP/win32_utils.h
-HEADERS += include/SCEP/BreadcrumbAdressBar/BreadcrumbAdressBar.h
-HEADERS += include/SCEP/BreadcrumbAdressBar/Layouts.h
-HEADERS += include/SCEP/BreadcrumbAdressBar/ModelViews.h
-HEADERS += include/SCEP/BreadcrumbAdressBar/Stylesheets.h
+HEADERS += include/SCEP/BreadcrumbsAddressBar/BreadcrumbsAddressBar.h
+HEADERS += include/SCEP/BreadcrumbsAddressBar/Layouts.h
+HEADERS += include/SCEP/BreadcrumbsAddressBar/ModelViews.h
+HEADERS += include/SCEP/BreadcrumbsAddressBar/Stylesheets.h
 
 # cpp
 SOURCES += src/SCEP/main.cpp
@@ -35,9 +35,9 @@ SOURCES += src/SCEP/MainWindow.cpp
 SOURCES += src/SCEP/Theme.cpp
 SOURCES += src/SCEP/AboutDialog.cpp
 SOURCES += src/SCEP/win32_utils.cpp
-SOURCES += src/SCEP/BreadcrumbAdressBar/BreadcrumbAdressBar.cpp
-SOURCES += src/SCEP/BreadcrumbAdressBar/Layouts.cpp
-SOURCES += src/SCEP/BreadcrumbAdressBar/ModelViews.cpp
+SOURCES += src/SCEP/BreadcrumbsAddressBar/BreadcrumbsAddressBar.cpp
+SOURCES += src/SCEP/BreadcrumbsAddressBar/Layouts.cpp
+SOURCES += src/SCEP/BreadcrumbsAddressBar/ModelViews.cpp
 
 # ui
 FORMS += forms/SCEP/MainWindow.ui

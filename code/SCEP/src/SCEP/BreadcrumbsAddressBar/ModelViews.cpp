@@ -33,10 +33,13 @@ QVariant FilenameModel::data(const QModelIndex &index, int role) const
 	}
 	if (role == Qt::DisplayRole)
 	{
-		//return getPathLabel(rslt.toString());//QFileInfo(rslt.toString()).fileName();
-		return QFileInfo(rslt.toString()).fileName();
+		//return QFileInfo(rslt.toString()).fileName();
+		return getPathLabel(rslt.toString());
 	}
-	return rslt;
+	else
+	{
+		return rslt;
+	}
 }
 //
 QStringList FilenameModel::get_file_list(const QString& path) const
@@ -68,25 +71,62 @@ QStringList FilenameModel::get_file_list(const QString& path) const
 	return lst;
 }
 //
-void FilenameModel::setPathPrefix(const QString& prefix)
+inline bool isAbsolute(const QString& prefix, const QFileInfo& fi)
 {
-	QFileInfo fi(prefix);
-	QString path = fi.canonicalPath().replace("/", "\\");
-	if ( path.isEmpty() || (! fi.isAbsolute()) || (! fi.exists()) || (! fi.isDir()) )
-	{
-		qDebug() << "Reject " << prefix;
+	// QFileInfo::isAbsolute returns true for some invalid pathes
+	return (! prefix.isEmpty()) && (prefix.contains("/") || prefix.contains("\\")) && fi.isAbsolute();
+}
+//
+inline bool dirExists(const QString& prefix, const QFileInfo& fi)
+{
+	return (! prefix.isEmpty()) && fi.exists() && fi.isDir();
+}
+//
+void FilenameModel::setPathPrefix(QString prefix, Mode mode)
+{
+	//qDebug() << "FilenameModel::setPathPrefix -> " << prefix;
 
-		// invalid, wrong path or no drive letter
-		setStringList({});
-		return;
-	}
-	else if (path == m_current_path.value_or(""))
+	QFileInfo fi(prefix);
+
+	if (! isAbsolute(prefix, fi))
 	{
-		// already listed
+		//qDebug() << "reject not absolute path " << prefix << "!";
+		setStringList({});
+		m_current_path = {};
 		return;
 	}
-	setStringList(get_file_list(path));
-	m_current_path = path;
+
+	bool missing = ! dirExists(prefix, fi);
+	bool completerException = (mode == Mode::Completer) && (! prefix.endsWith("/")) && (! prefix.endsWith("\\") );
+	if ( missing || completerException )
+	{
+		//qDebug() << "trying parent directory..." << prefix;
+		// maybe trying to type something ?
+		// so we should consider the parent directory
+		prefix = fi.absolutePath();
+		fi = QFileInfo(prefix);
+	}
+	
+	if (dirExists(prefix, fi))
+	{
+		QString path = fi.absoluteFilePath().replace("/", "\\");
+		//qDebug() << "path = " << path;
+		if (path == m_current_path.value_or(""))
+		{
+			//qDebug() << "already listed !";
+		}
+		else
+		{
+			//qDebug() << "listing...";
+			setStringList(get_file_list(path));
+			m_current_path = path;
+
+		}
+	}
+	else
+	{
+		//qDebug() << "invalid directory !";
+	}
 }
 //
 //
@@ -99,10 +139,7 @@ ListView::ListView(MenuListView* pMenuListView)
 
 	setFrameShape(QFrame::NoFrame);
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	QPalette pal = palette();
-	// TODO JHO self.palette().color(pal.Window)) with self = MenuListView
-	pal.setColor(QPalette::Base, pal.color(pal.Window));
-	setPalette(pal);
+
 
 	setMouseTracking(true); // receive mouse move events
 	setFocusPolicy(Qt::NoFocus); // no focus rect
@@ -158,6 +195,8 @@ MenuListView::MenuListView(QWidget* parent)
 	QWidgetAction* act_wgt = new QWidgetAction(this);
 	act_wgt->setDefaultWidget(p_listview);
 	addAction(act_wgt);
+	// Resolving some dark style problems
+	setStyleSheet("QMenu { background: palette(base); }");
 
 	connect(p_listview, &ListView::activated, this, &MenuListView::activated);
 	connect(p_listview, &ListView::clicked, this, &MenuListView::clicked);

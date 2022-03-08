@@ -53,7 +53,7 @@ protected slots:
 	void	onTabCloseRequested();
 
 	void	loading(const QString& path);
-	void	pathChanged(const QString& path);
+	void	pathChanged(const QString& path, bool virtualFolder);
 	void	tabClosed();
 
 protected:
@@ -62,7 +62,7 @@ protected:
 private:
 	void	closeTab(int tabIndex, bool closeAppIfNoRemainingTab = true);
 	void	updateIcons();
-	static QString tabName(const QString& tabPath);
+	static QString tabName(const QString& tabPath, bool virtualFolder);
 
 private:
 	Theme* ptr_theme = nullptr;

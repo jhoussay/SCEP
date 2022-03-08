@@ -6,9 +6,13 @@
 #include <QWidget>
 //
 class ExplorerWrapper2;
+class BreadcrumbsAddressBar;
 class Theme;
 //
+class QToolBar;
+//
 /**
+ *	@ingroup			SCEP
  *	@brief				
  */
 class ExplorerWidget2 : public QWidget
@@ -26,26 +30,24 @@ public:
 	virtual ~ExplorerWidget2();
 
 public:
-	ErrorPtr init(Theme* ptr_theme, const QString& path = {});
+	ErrorPtr			init(Theme* ptr_theme, const QString& path = {});
 
-	ErrorPtr setCurrentPath(const QString& path);
-	QString currentPath() const;
+	ErrorPtr			setCurrentPath(const QString& path);
+	QString				currentPath() const;
 
 signals:
-	void	loading(QString path);
-	void	pathChanged(QString path);
-	void	openNewTab(QString path, NewTabPosition position, NewTabBehaviour behaviour);
-	void	closed();
-//
-//protected:
-//	void	paintEvent(QPaintEvent* pEvent) override;
-//
-//private:
-//	ErrorPtr updateEmbeddedWidget_p();
-//	void updateEmbeddedWidget();
+	void				loading(const QString& path);
+	void				pathChanged(const QString& path, bool virtualFolder);
+	void				openNewTab(const QString& path, NewTabPosition position, NewTabBehaviour behaviour);
+	void				closed();
+
+protected slots:
+	void				onLoading(const QString& path);
+	void				onPathChanged(const QString& path, bool success, bool virtualFolder);
 
 private:
-	ExplorerWrapper2* p_wrapper = nullptr;
-	bool m_visibleExplorer = false;
-	QWidget* p_widget = nullptr;
+	ExplorerWrapper2*	p_wrapper		=	nullptr;	//!< Wrapper for explorer win32 window (without address bar)
+	QWidget*			p_widget		=	nullptr;	//!< Widget embedding explorer win32 window
+	BreadcrumbsAddressBar* p_addressBar	=	nullptr;	//!< Address bar widget
+	QToolBar*			p_toolBar		=	nullptr;	//!< ToolBar containing navigation buttons and address bar
 };

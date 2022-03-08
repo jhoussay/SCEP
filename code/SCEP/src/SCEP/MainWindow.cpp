@@ -11,6 +11,7 @@
 #include <QStandardPaths>
 #include <QLabel>
 #include <QMovie>
+#include <QShortcut>
 //
 #ifdef FRAMELESS
 #include <QMouseEvent>
@@ -61,16 +62,21 @@ MainWindow::MainWindow(Theme* ptrTheme)
 	connect(p_addTabAction, SIGNAL(triggered()), this, SLOT(addNewTab()));
 	p_addTabAction->setShortcutContext(Qt::ApplicationShortcut);
 	p_addTabAction->setShortcut(Qt::CTRL | Qt::Key_T);
+	//QShortcut* pAddTabShortcut = new QShortcut(Qt::CTRL | Qt::Key_T, this, [this](){ this->addNewTab(); });
+	//pAddTabShortcut->setContext(Qt::ApplicationShortcut);
 
 	p_closeTabAction = new QAction(tr("Close current tab"), this);
 	connect(p_closeTabAction, SIGNAL(triggered()), this, SLOT(closeCurrentTab()));
 	p_closeTabAction->setShortcutContext(Qt::ApplicationShortcut);
 	p_closeTabAction->setShortcut(Qt::CTRL | Qt::Key_W);
+	//QShortcut* pCloseTabShortcut = new QShortcut(Qt::CTRL | Qt::Key_W, this, [this](){ this->closeCurrentTab(); });
+	//pCloseTabShortcut->setContext(Qt::ApplicationShortcut);
 
 
 	p_aboutAction = new QAction(tr("About SCEP..."), this);
 	connect(p_aboutAction, SIGNAL(triggered()), this, SLOT(about()));
 	//p_aboutAction->setShortcut();
+
 
 	// Buttons
 	//////////
@@ -164,10 +170,10 @@ void MainWindow::addNewTab(QString path, NewTabPosition position, NewTabBehaviou
 	setUpdatesEnabled(false);
 
 	ExplorerWidget* pExplorerWidget = new ExplorerWidget();
-	connect(pExplorerWidget, SIGNAL(loading(QString)), this, SLOT(loading(QString)));
-	connect(pExplorerWidget, SIGNAL(pathChanged(QString)), this, SLOT(pathChanged(QString)));
-	connect(pExplorerWidget, SIGNAL(openNewTab(QString, NewTabPosition, NewTabBehaviour)), this, SLOT(addNewTab(QString, NewTabPosition, NewTabBehaviour)));
-	connect(pExplorerWidget, SIGNAL(closed()), this, SLOT(tabClosed()));
+	connect(pExplorerWidget, &ExplorerWidget::loading, this, &MainWindow::loading);
+	connect(pExplorerWidget, &ExplorerWidget::pathChanged, this, &MainWindow::pathChanged);
+	connect(pExplorerWidget, &ExplorerWidget::openNewTab, this, &MainWindow::addNewTab);
+	connect(pExplorerWidget, &ExplorerWidget::closed, this, &MainWindow::tabClosed);
 	if (ErrorPtr pError = pExplorerWidget->init(ptr_theme, path))
 	{
 		displayError(pError);
@@ -181,7 +187,7 @@ void MainWindow::addNewTab(QString path, NewTabPosition position, NewTabBehaviou
 		{
 			tabIndex = p_ui->tabWidget->currentIndex() + 1;
 		}
-		p_ui->tabWidget->insertTab(tabIndex, pExplorerWidget, tabName(pExplorerWidget->currentPath()));
+		p_ui->tabWidget->insertTab(tabIndex, pExplorerWidget, tabName(pExplorerWidget->currentPath(), false));
 
 		QToolButton* pCloseButton = new QToolButton();
 		pCloseButton->setToolTip(tr("Close tab"));
@@ -253,7 +259,7 @@ void MainWindow::onTabCloseRequested()
 	}
 }
 //
-void MainWindow::loading(const QString& path)
+void MainWindow::loading(const QString& /*path*/)
 {
 	if (ExplorerWidget* pExplorerWidget = dynamic_cast<ExplorerWidget*>(sender()))
 	{
@@ -276,7 +282,7 @@ void MainWindow::loading(const QString& path)
 	}
 }
 //
-void MainWindow::pathChanged(const QString& path)
+void MainWindow::pathChanged(const QString& path, bool virtualFolder)
 {
 	if (ExplorerWidget* pExplorerWidget = dynamic_cast<ExplorerWidget*>(sender()))
 	{
@@ -284,7 +290,7 @@ void MainWindow::pathChanged(const QString& path)
 		{
 			if (p_ui->tabWidget->widget(tabIndex) == pExplorerWidget)
 			{
-				p_ui->tabWidget->setTabText(tabIndex, tabName(path));
+				p_ui->tabWidget->setTabText(tabIndex, tabName(path, virtualFolder));
 
 				QLabel* pLabel = dynamic_cast<QLabel*>(p_ui->tabWidget->tabBar()->tabButton(tabIndex, QTabBar::LeftSide));
 				if (pLabel)
@@ -341,11 +347,18 @@ void MainWindow::updateIcons()
 	p_menuButton->setIcon( ptr_theme->icon(Theme::Icon::Menu) );
 }
 //
-QString MainWindow::tabName(const QString& tabPath)
+QString MainWindow::tabName(const QString& tabPath, bool virtualFolder)
 {
-	QFileInfo fi(tabPath);
-	QString name = fi.isDir() ? fi.fileName() : fi.absoluteDir().dirName();
-	// '&' creates a shortcut --> TODO need to espace it using '&&' instead
-	return tabPath.isEmpty() || name.isEmpty() ? "Explorer" : name;
+	if (virtualFolder)
+	{
+		return tabPath;
+	}
+	else
+	{
+		QFileInfo fi(tabPath);
+		QString name = fi.isDir() ? fi.fileName() : fi.absoluteDir().dirName();
+		// '&' creates a shortcut --> TODO need to espace it using '&&' instead
+		return tabPath.isEmpty() || name.isEmpty() ? "Explorer" : name;
+	}
 }
 //

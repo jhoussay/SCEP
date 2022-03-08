@@ -24,6 +24,7 @@ class QToolButton;
 #include <QFileIconProvider>
 
 #include <vector>
+#include <optional>
 
 /**
  *	@ingroup				SCEP
@@ -37,6 +38,7 @@ class BreadcrumbsAddressBar : public QFrame
 	friend class AddressLineEdit;
 	friend class SwitchSpaceWidget;
 	friend class StyledToolButton;
+	friend class ExplorerWidget2;
 
 	Q_OBJECT
 
@@ -49,28 +51,33 @@ signals:
 	 *	@brief				entered path does not exist
 	 */
 	void					path_error(const QString& path);
+
 	/**
-	 *	@brief
+	 *	@brief				Signal emitted to request a new path
+	 */
+	void					path_requested(const QString& path);
+	/**
+	 *	@brief				Signal emitted when a new path has beed selected
 	 */
 	void					path_selected(const QString& path);
 
 public:
-	BreadcrumbsAddressBar(QWidget* parent = nullptr, bool show_open_button = true);
+	BreadcrumbsAddressBar(QWidget* parent = nullptr);
 
 protected:
 	/**
 	 *	@brief				Init QCompleter to work with filesystem
 	 */
-	static QCompleter*		init_completer(QLineEdit* edit_widget, FilenameModel* model);
+	QCompleter*				init_completer(QLineEdit* edit_widget, FilenameModel* model);
 
 	/**
 	 *	@brief				Path -> QIcon
 	 */
 	QIcon					get_icon(const QString& path);
 
-	void					line_address_contextMenuEvent(QContextMenuEvent *event);
+	void					set_line_address_closeOnFocusOut(bool closeOnFocusOut);
 
-	void					line_address_focusOutEvent(QFocusEvent *event);
+	void					line_address_focusOutEvent();
 
 	/**
 	 *	@brief				SLOT: fill menu with hidden breadcrumbs list
@@ -103,8 +110,6 @@ protected:
 	 */
 	void					update_rootmenu_devices();
 
-	void					_browse_for_folder();
-
 	void					_clear_crumbs();
 	
 	/**
@@ -130,14 +135,29 @@ protected:
 	 */
 	void					crumb_menu_show();
 
-public slots:
+public:
 	/**
 	 *	@brief				Set path displayed in this BreadcrumbsAddressBar
-	 *
-	 *	Returns `False` if path does not exist or permission error.
-	 *	Can be used as a SLOT: `sender().path` is used if `path` is `None`)
+	 *	@param path			New path
+	 *	@param virtualFolder Indicates whether it is a virtual folder
+	 *	@return				Returns `False` if path does not exist or a permission error occurs (for a non virtual folder only).
 	 */
-	bool					set_path(QString path = {});
+	bool					set_path(QString path, bool virtualFolder);
+
+	/**
+	 *	@brief				Display loading icon
+	 *	@param path			Path being loaded
+	 */
+	void					set_loading(const QString& path);
+
+protected slots:
+	/**
+	 *	@brief				Request a new path
+	 *
+	 *	Can be used as a SLOT: `sender().path` is used if `path` is `None`
+	 *	Will provoque the emission of the `path_requested` signal.
+	 */
+	void					requestPathChange(QString path = {});
 
 protected:
 	/**
@@ -159,8 +179,9 @@ protected:
 
 	/**
 	 *	@brief				Show text address field
+	 *	@param show			Requested state for the address field
 	 */
-	void					_show_address_field(bool b_show);
+	void					show_address_field(bool show);
 
 	/**
 	 *	@brief				SLOT: a breadcrumb is hidden/removed or shown
@@ -188,10 +209,10 @@ private:
 	QToolButton*			p_btn_root_crumb = nullptr;
 	QWidget*				p_crumbs_panel = nullptr;
 	QWidget*				p_switch_space = nullptr;
-	QToolButton*			p_btn_browse = nullptr;
 	bool					m_ignore_resize = false;
 	QString					m_path = {};
-	bool					m_line_address_context_menu_flag = false;
+	bool					m_line_address_closeOnFocusOut = true;
 	std::vector<QAction*>	m_actions_hidden_crumbs;
 	std::vector<QAction*>	m_actions_devices;
+	QMovie*					ptr_bufferingMovie = nullptr;
 };

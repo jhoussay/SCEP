@@ -18,52 +18,52 @@ TODO
 
 ### Minimum Viable Product
 
- - [x] Embed an explorer.exe window in Qt application
- - [x] Embed multiple explorer.exe windows in QTabWidget
-
-**Known limitations**
- - Explorer windows blink when the user moves the SCEP window.
- - Opening a new tab is not very smooth and clean with multiple blinkings
- - [Rare] Opening a new tab results in an empty tab, SCEP does not manage to correctly "grab" the new launched explorer window.
+- [x] Embed an a file explorer window in Qt application
+- [x] Embed multiple file explorer windows in QTabWidget
 
 ### V1.0
- - [x] Application icon on exe file
- - [ ] Application menu
- - [x] About window
- - [ ] Tab context menu : close tab, duplicate tab, copy full path to clipboard
- - [ ] Installation program
- - [ ] Handle "&" in current folder
- - [ ] Handle user closing explorer in the tab
 
-### V1.1
+- [x] Address bar
+- [ ] Back and forward buttons
+- [x] Application icon on exe file
+- [x] Application menu
+- [x] About window
+- [ ] Tab context menu : close tab, duplicate tab, copy full path to clipboard, close other tabs
+- [ ] Close tab with middle click
+- [ ] Installation program
+- [ ] Handle "&" in current folder
+- [ ] Doxygen comments and html generation
+- [x] "Translate" pathes as explorer.exe does.
+- [ ] Single instance
+- [ ] Reopen closed tabs
+- [x] Open new tab with middle click on a folder
+- [x] Open new tab with a dedicated option in the context menu displayed for folders
+- [ ] Detect media added or removed
 
- - [ ] Doxygen comments and html generation
- - [ ] "Translate" paths as explorer.exe does.
-Example : "C:\Users" -> "C:\Utilisateurs" in french
- - [ ] Single instance
- - [ ] Reopen closed tabs
- - [ ] Jump list
- - [ ] Windows + Shift + E to set focus to running instance and open a new tab
-   (requires a running instance !)
- - [ ] Help window
+### Misc
 
-### V1.2
-
- - [ ] Ability to open a new instance
- - [ ] Reopen closed instances
- - [ ] Close other tabs
+- [ ] Handle known folders icons in address bar and tabs
 
 ### V2.0
 
-- [ ] Replace QTabWidget by Advanced Docking System : https://github.com/githubuser0xFFFF
-
-
-### ...
-
+- [ ] Search !
+- [ ] Help window
 - [ ] I18N
-- [ ] Handle explorer crash
+- [ ] Jump list
+- [ ] Windows + Shift + E to set focus to running instance and open a new tab
+  (requires a running instance !)
+- [ ] Replace QTabWidget by Advanced Docking System : https://github.com/githubuser0xFFFF
+- [ ] Ability to open a new instance
+- [ ] Reopen closed instances
 
 ## Building from sources
 
 TODO
 
+
+
+
+
+# Assets
+* [Right Arrow](https://www.iconfinder.com/icons/211607/right_arrow_icon), MIT
+* [Left Arrow](https://www.iconfinder.com/icons/211689/left_arrow_icon), MIT

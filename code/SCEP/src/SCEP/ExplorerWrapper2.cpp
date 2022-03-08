@@ -15,6 +15,7 @@
 #include <shlwapi.h>
 #include <knownfolders.h>
 #include <shlobj_core.h>
+#include <shobjidl_core.h>
 #include <strsafe.h>
 #include <windowsx.h>
 #include <winuser.h>
@@ -59,24 +60,46 @@ inline IShellItem* CreateShellItem(const QString& path)
 			}
 		}
 	}
-	else
-	{
-		qWarning() << "Invalid path " << path << ", defaulting to desktop";
-		if (SUCCEEDED(SHCreateItemInKnownFolder(FOLDERID_Desktop, 0, nullptr, IID_PPV_ARGS(&pShellItem))))
-		{
-			return pShellItem;
-		}
-	}
 
 	return nullptr;
 }
 //
-inline QString path(PCIDLIST_ABSOLUTE pidlFolder)
+inline QString path(PCIDLIST_ABSOLUTE pidlFolder, bool& virtualFolder)
 {
-	static constexpr int BufferfSize = 4096;
-	std::array<wchar_t, BufferfSize> fullPath;
-	SHGetPathFromIDList(pidlFolder, fullPath.data());
-	return QString::fromWCharArray(fullPath.data());
+	QString rslt = {};
+	virtualFolder = false;
+
+	PWSTR pszName = nullptr;
+
+	// Trying to get the file path
+	HRESULT hr = SHGetNameFromIDList(pidlFolder, SIGDN_FILESYSPATH, &pszName);
+	if (SUCCEEDED(hr))
+	{
+		rslt = QString::fromWCharArray(pszName);
+		CoTaskMemFree(pszName);
+	}
+	// Defaulting to the normal display
+	// example : "Network" virtual folder
+	else
+	{
+		// TODO : identify the "known folder" and convert it to QAbstractFileIconProvider::IconType
+		// and the replace "bool& virtualFolder" by this IconType.
+
+		hr = SHGetNameFromIDList(pidlFolder, SIGDN_NORMALDISPLAY, &pszName);
+		if (SUCCEEDED(hr))
+		{
+			virtualFolder = true;
+			rslt = QString::fromWCharArray(pszName);
+			CoTaskMemFree(pszName);
+		}
+		else
+		{
+			qWarning() << "path() failed";
+		}
+	}
+	
+	qDebug() << "path = " << rslt;
+	return rslt;
 }
 //
 //
@@ -162,19 +185,20 @@ ErrorPtr ExplorerWrapper2::setCurrentPath(const QString& path)
 {
 	CHECK(p_peb, "ExplorerWrapper2::setCurrentPath() : No current instance.");
 
-	QFileInfo pathInfo(path);
-	CHECK(pathInfo.exists() && pathInfo.isDir(), "Invalid path");
+//	QFileInfo pathInfo(path);
+//	CHECK(pathInfo.exists() && pathInfo.isDir(), "Invalid path");
 
 	IShellItem* psi = CreateShellItem(path);
 	if (psi)
 	{
 		HRESULT hr = p_peb->BrowseToObject(psi, 0);
 		psi->Release();
-		CHECK(SUCCEEDED(hr), "Unable to set explorer current path : " + GetLastErrorAsString());
+		CHECK(SUCCEEDED(hr), "Unable to set explorer current path \"" + path + "\" : " + GetLastErrorAsString());
 	}
 	else
 	{
-		return createError("Unable to set explorer current path.");
+		emit pathChanged(path, false, false);
+		return createError("Unable to set explorer current path \"" + path + "\"");
 	}
 
 	return success();
@@ -264,7 +288,9 @@ IFACEMETHODIMP ExplorerWrapper2::OnViewCreated(IShellView * psv)
 //
 IFACEMETHODIMP ExplorerWrapper2::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 {
-	QString loadingPath = path(pidlFolder);
+	bool virtualFolder = false;
+	QString loadingPath = path(pidlFolder, virtualFolder);
+
 	emit loading(loadingPath);
 
 	return S_OK;
@@ -272,16 +298,22 @@ IFACEMETHODIMP ExplorerWrapper2::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolde
 //
 IFACEMETHODIMP ExplorerWrapper2::OnNavigationComplete(PCIDLIST_ABSOLUTE pidlFolder)
 {
-	m_currentPath = path(pidlFolder);
-	emit pathChanged(m_currentPath);
+	bool virtualFolder = false;
+	m_currentPath = path(pidlFolder, virtualFolder);
+
+	emit pathChanged(m_currentPath, true, virtualFolder);
+	//QTimer::singleShot(3000, [=](){emit pathChanged(m_currentPath, true, virtualFolder);});
 
 	return S_OK;
 }
 //
-IFACEMETHODIMP ExplorerWrapper2::OnNavigationFailed(PCIDLIST_ABSOLUTE /* pidlFolder */)
+IFACEMETHODIMP ExplorerWrapper2::OnNavigationFailed(PCIDLIST_ABSOLUTE pidlFolder)
 {
+	bool virtualFolder = false;
+	qDebug() << "Failed to navigated to " << path(pidlFolder, virtualFolder);
+
 	// Force GUI cleaning
-	emit pathChanged(m_currentPath);
+	emit pathChanged(m_currentPath, false, virtualFolder);
 
 	return S_OK;
 }

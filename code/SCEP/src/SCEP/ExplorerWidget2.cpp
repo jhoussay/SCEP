@@ -1,22 +1,37 @@
 ﻿#include <SCEP/ExplorerWidget2.h>
 #include <SCEP/ExplorerWrapper2.h>
+#include <SCEP/BreadcrumbsAddressBar/BreadcrumbsAddressBar.h>
 //
 #include <QWindow>
 #include <QVBoxLayout>
+#include <QToolBar>
+#include <QKeyEvent>
+#include <QMessageBox>
 //
 //#include <uxtheme.h>
 //
 ExplorerWidget2::ExplorerWidget2(QWidget* pParent, Qt::WindowFlags f)
 	:	QWidget(pParent, f)
 {
-	p_wrapper = new ExplorerWrapper2();
-	connect(p_wrapper, SIGNAL(loading(QString)), this, SIGNAL(loading(QString)));
-	connect(p_wrapper, SIGNAL(pathChanged(QString)), this, SIGNAL(pathChanged(QString)));
-	connect(p_wrapper, SIGNAL(openNewTab(QString, NewTabPosition, NewTabBehaviour)), this, SIGNAL(openNewTab(QString, NewTabPosition, NewTabBehaviour)));
-	connect(p_wrapper, SIGNAL(closed()), this, SIGNAL(closed()));
-
 	setMinimumWidth(200);
 	setMinimumHeight(200);
+
+	// UI content
+	QVBoxLayout* pLayout = new QVBoxLayout(this);
+	pLayout->setContentsMargins(0, 0, 0, 0);
+	p_toolBar = new QToolBar(this);
+	p_addressBar = new BreadcrumbsAddressBar(this);
+	connect(p_addressBar, &BreadcrumbsAddressBar::path_requested, this, &ExplorerWidget2::setCurrentPath);
+	p_toolBar->addWidget(p_addressBar);
+	pLayout->setMenuBar(p_toolBar);
+	setLayout(pLayout);
+
+	// Explorer window wrapper
+	p_wrapper = new ExplorerWrapper2();
+	connect(p_wrapper, &ExplorerWrapper2::loading, this, &ExplorerWidget2::onLoading);
+	connect(p_wrapper, &ExplorerWrapper2::pathChanged, this, &ExplorerWidget2::onPathChanged);
+	connect(p_wrapper, &ExplorerWrapper2::openNewTab, this, &ExplorerWidget2::openNewTab);
+	connect(p_wrapper, &ExplorerWrapper2::closed, this, &ExplorerWidget2::closed);
 }
 //
 ExplorerWidget2::~ExplorerWidget2()
@@ -41,10 +56,7 @@ ErrorPtr ExplorerWidget2::init(Theme* ptr_theme, const QString& path)
 	p_widget->setMinimumWidth(100);
 	p_widget->setMinimumHeight(100);
 	p_widget->setParent(this);
-	QVBoxLayout* pLayout = new QVBoxLayout(this);
-	pLayout->setContentsMargins(0, 0, 0, 0);
-	pLayout->addWidget(p_widget);
-	setLayout(pLayout);
+	layout()->addWidget(p_widget);
 
 	// Done !
 	return success();
@@ -70,52 +82,24 @@ QString ExplorerWidget2::currentPath() const
 	}
 }
 //
-//void ExplorerWidget2::paintEvent([[maybe_unused]] QPaintEvent* pEvent)
-//{
-//	if (! m_visibleExplorer)
-//	{
-//		p_wrapper->setVisible(true);
-//		m_visibleExplorer = true;
-//	}
+void ExplorerWidget2::onLoading(const QString& path)
+{
+	p_addressBar->set_loading(path);
+	emit loading(path);
+}
 //
-//	updateEmbeddedWidget();
-//
-//	//QWidget::paintEvent(pEvent);
-//}
-////
-//ErrorPtr ExplorerWidget2::updateEmbeddedWidget_p()
-//{
-//	if (QWidget* pWidget = p_widget)
-//	{
-//		HWND explorerId = p_wrapper->hwnd();
-//
-//		// Estimate the title bar height
-//		HTHEME htheme = GetWindowTheme(explorerId);
-//		int h = GetThemeSysSize(htheme, SM_CXBORDER) + GetThemeSysSize(htheme, SM_CYSIZE) + GetThemeSysSize(htheme, SM_CXPADDEDBORDER) * 2;
-//
-//		// Set the position
-//		QPoint pos = p_widget->mapToGlobal(QPoint(0, 0));
-//		BOOL okPos = SetWindowPos(	explorerId,
-//									nullptr,
-//									0,//pos.x(),
-//									-h,//pos.y(),
-//									p_widget->width(),
-//									p_widget->height() + h,
-//									SWP_NOZORDER);
-//		CHECK(okPos, "Position and size change error");
-//
-//		UpdateWindow(explorerId);
-//		UpdateWindow(m_windowId);
-//	}
-//
-//	return success();
-//}
-////
-//void ExplorerWidget2::updateEmbeddedWidget()
-//{
-//	if (ErrorPtr pError = updateEmbeddedWidget_p())
-//	{
-//		displayError(pError);
-//	}
-//}
+void ExplorerWidget2::onPathChanged(const QString& path, bool success, bool virtualFolder)
+{
+	if (success)
+	{
+		p_addressBar->set_path(path, virtualFolder);
+		emit pathChanged(path/*, success*/, virtualFolder);
+	}
+	else
+	{
+		p_addressBar->set_line_address_closeOnFocusOut(false);
+		QMessageBox::critical(this, tr("SCEP"), tr("Could not navigate to \"%1\"").arg(path));
+		p_addressBar->set_line_address_closeOnFocusOut(true);
+	}
+}
 //
