@@ -3,7 +3,7 @@
  *	https://github.com/Winand/breadcrumbsaddressbar
  */
 
-#include <SCEP/BreadcrumbAdressBar/ModelViews.h>
+#include <SCEP/BreadcrumbsAddressBar/ModelViews.h>
 #include <SCEP/win32_utils.h>
 //
 #include <QFileInfo>
@@ -32,7 +32,10 @@ QVariant FilenameModel::data(const QModelIndex &index, int role) const
 		return m_icon_provider(QStringListModel::data(index, Qt::DisplayRole).toString());
 	}
 	if (role == Qt::DisplayRole)
+	{
+		//return getPathLabel(rslt.toString());//QFileInfo(rslt.toString()).fileName();
 		return QFileInfo(rslt.toString()).fileName();
+	}
 	return rslt;
 }
 //

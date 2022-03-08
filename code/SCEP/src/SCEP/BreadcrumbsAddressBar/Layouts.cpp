@@ -3,7 +3,7 @@
  *	https://github.com/Winand/breadcrumbsaddressbar
  */
 
-#include <SCEP/BreadcrumbAdressBar/Layouts.h>
+#include <SCEP/BreadcrumbsAddressBar/Layouts.h>
 //
 #include <QWidget>
 #include <QTimer>

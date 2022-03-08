@@ -55,7 +55,7 @@ signals:
 	void					path_selected(const QString& path);
 
 public:
-	BreadcrumbsAddressBar(QWidget* parent = nullptr);
+	BreadcrumbsAddressBar(QWidget* parent = nullptr, bool show_open_button = true);
 
 protected:
 	/**
@@ -177,7 +177,7 @@ protected:
 	void					mouse_pos_timer_event();
 
 private:
-	StyleProxy*				p_style_crumbs;
+	StyleProxy*				p_style_crumbs = nullptr;
 	QFileIconProvider		m_file_ico_prov;
 	FilenameModel*			p_fs_model = nullptr;
 	QLabel*					p_path_icon = nullptr;

@@ -3,10 +3,10 @@
  *	https://github.com/Winand/breadcrumbsaddressbar
  */
 
-#include <SCEP/BreadcrumbAdressBar/BreadcrumbAdressBar.h>
-#include <SCEP/BreadcrumbAdressBar/Layouts.h>
-#include <SCEP/BreadcrumbAdressBar/ModelViews.h>
-#include <SCEP/BreadcrumbAdressBar/Stylesheets.h>
+#include <SCEP/BreadcrumbsAddressBar/BreadcrumbsAddressBar.h>
+#include <SCEP/BreadcrumbsAddressBar/Layouts.h>
+#include <SCEP/BreadcrumbsAddressBar/ModelViews.h>
+#include <SCEP/BreadcrumbsAddressBar/Stylesheets.h>
 #include <SCEP/win32_utils.h>
 //
 #include <QStyleOptionToolButton>
@@ -254,12 +254,11 @@ inline void set_path_property(QObject* pObject, const QString& path)
 //
 QSize TRANSP_ICON_SIZE = {40, 40}; // px, size of generated semi-transparent icons
 //
-BreadcrumbsAddressBar::BreadcrumbsAddressBar(QWidget* parent)
+BreadcrumbsAddressBar::BreadcrumbsAddressBar(QWidget* parent, bool show_open_button)
 	:	QFrame(parent)
 {
 	p_style_crumbs = new StyleProxy(QStyleFactory::create(qApp->style()->objectName()),
 									QPixmap(":/SCEP/icons/iconfinder_icon-ios7-arrow-right_211607.png")	);
-	p_style_crumbs->setParent(this);
 
 	QHBoxLayout* pLayout = new QHBoxLayout(this);
 
@@ -330,12 +329,15 @@ BreadcrumbsAddressBar::BreadcrumbsAddressBar(QWidget* parent)
 	// crumbs_cont_layout.addWidget(self.switch_space)
 	pCrumbs_layout->set_space_widget(p_switch_space);
 
-	p_btn_browse = new QToolButton(this);
-	p_btn_browse->setAutoRaise(true);
-	p_btn_browse->setText(tr("..."));
-	p_btn_browse->setToolTip(tr("Browse for folder"));
-	connect(p_btn_browse, &::QToolButton::clicked, this, &BreadcrumbsAddressBar::_browse_for_folder);
-	pLayout->addWidget(p_btn_browse);
+	if (show_open_button)
+	{
+		p_btn_browse = new QToolButton(this);
+		p_btn_browse->setAutoRaise(true);
+		p_btn_browse->setText(tr("..."));
+		p_btn_browse->setToolTip(tr("Browse for folder"));
+		connect(p_btn_browse, &::QToolButton::clicked, this, &BreadcrumbsAddressBar::_browse_for_folder);
+		pLayout->addWidget(p_btn_browse);
+	}
 
 	setMaximumHeight(p_line_address->height()); // FIXME:
 
@@ -384,7 +386,7 @@ void BreadcrumbsAddressBar::line_address_contextMenuEvent(QContextMenuEvent * /*
 //
 void BreadcrumbsAddressBar::line_address_focusOutEvent(QFocusEvent * /*e*/)
 {
-	if (! m_line_address_context_menu_flag)
+	if (m_line_address_context_menu_flag)
 	{
 		m_line_address_context_menu_flag = false;
 		return; // do not cancel edit on context menu
