@@ -13,7 +13,10 @@
 #endif //FRAMELESS
 //
 class QAction;
+class QWidgetAction;
 class QToolButton;
+class QRadioButton;
+class QButtonGroup;
 //
 namespace Ui
 {
@@ -70,6 +73,11 @@ private:
 
 	QAction* p_addTabAction = nullptr;
 	QAction* p_closeTabAction = nullptr;
+	QWidgetAction* p_themeAction = nullptr;
+	QRadioButton* p_autoThemeButton = nullptr;
+	QRadioButton* p_lightThemeButton = nullptr;
+	QRadioButton* p_darkThemeButton = nullptr;
+	QButtonGroup* p_themeButtonGroup = nullptr;
 	QAction* p_aboutAction = nullptr;
 
 	QToolButton* p_addTabButton = nullptr;

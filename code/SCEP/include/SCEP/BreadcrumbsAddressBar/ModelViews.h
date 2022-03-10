@@ -11,6 +11,8 @@
 
 #include <optional>
 
+class Theme;
+
 /**
  *	@ingroup				SCEP
  *
@@ -65,7 +67,7 @@ class MenuListView;
 class ListView : public QListView
 {
 public:
-	ListView(MenuListView* pMenuListView);
+	ListView(MenuListView* pMenuListView, Theme* ptrTheme);
 
 	QSize sizeHint() const override;
 	QSize minimumSizeHint() const override;
@@ -96,7 +98,7 @@ class MenuListView : public QMenu
 	friend class ListView;
 
 public:
-	MenuListView(QWidget* parent = nullptr);
+	MenuListView(QWidget* parent, Theme* ptrTheme);
 
 	void setModel(QAbstractItemModel *model);
 

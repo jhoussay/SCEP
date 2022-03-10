@@ -12,6 +12,9 @@
 #include <QLabel>
 #include <QMovie>
 #include <QShortcut>
+#include <QWidgetAction>
+#include <QRadioButton>
+#include <QButtonGroup>
 //
 #ifdef FRAMELESS
 #include <QMouseEvent>
@@ -72,6 +75,25 @@ MainWindow::MainWindow(Theme* ptrTheme)
 	//QShortcut* pCloseTabShortcut = new QShortcut(Qt::CTRL | Qt::Key_W, this, [this](){ this->closeCurrentTab(); });
 	//pCloseTabShortcut->setContext(Qt::ApplicationShortcut);
 
+
+	QWidget* pThemeWidget = new QWidget(this);
+	QHBoxLayout* pThemeLayout = new QHBoxLayout(pThemeWidget);
+	QLabel* pThemeLabel = new QLabel(tr("Theme : "), pThemeWidget);
+	pThemeLayout->addWidget(pThemeLabel);
+	p_themeButtonGroup = new QButtonGroup(pThemeWidget);
+	p_autoThemeButton = new QRadioButton(tr("Auto"), pThemeWidget);
+	p_themeButtonGroup->addButton(p_autoThemeButton);
+	pThemeLayout->addWidget(p_autoThemeButton);
+	p_lightThemeButton = new QRadioButton(tr("Light"), pThemeWidget);
+	p_themeButtonGroup->addButton(p_lightThemeButton);
+	pThemeLayout->addWidget(p_lightThemeButton);
+	p_darkThemeButton = new QRadioButton(tr("Dark"), pThemeWidget);
+	p_themeButtonGroup->addButton(p_darkThemeButton);
+	pThemeLayout->addWidget(p_darkThemeButton);
+	pThemeWidget->setLayout(pThemeLayout);
+	// TODO connect(p_themeButtonGroup) !!!
+	p_themeAction = new QWidgetAction(this);
+	p_themeAction->setDefaultWidget(pThemeWidget);
 
 	p_aboutAction = new QAction(tr("About SCEP..."), this);
 	connect(p_aboutAction, SIGNAL(triggered()), this, SLOT(about()));
@@ -241,7 +263,10 @@ void MainWindow::showMenu()
 	QMenu menu(this);
 	menu.addAction(p_addTabAction);
 	menu.addAction(p_closeTabAction);
+	menu.addSeparator();
 	menu.addAction(p_aboutAction);
+	menu.addSeparator();
+	menu.addAction(p_themeAction);
 
 	// Get menu real width
 	menu.show();

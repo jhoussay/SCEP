@@ -119,10 +119,10 @@ public:
 		}
 	}
 
-	QRect subElementRect(	QStyle::ComplexControl control,
+	QRect subControlRect(	QStyle::ComplexControl control,
 							const QStyleOptionComplex *option,
 							QStyle::SubControl subControl,
-							const QWidget *widget = nullptr) const
+							const QWidget *widget = nullptr) const override
 	{
 		QRect rc = QProxyStyle::subControlRect(control, option, subControl, widget);
 		if (win_modern.contains(m_stylename) && subControl == QProxyStyle::SC_ToolButtonMenu)
@@ -266,7 +266,7 @@ BreadcrumbsAddressBar::BreadcrumbsAddressBar(Theme* ptrTheme, QWidget* parent)
 	setObjectName("BreadcrumbsAddressBar");
 	if (ptr_theme->type() == Theme::Type::Dark)
 	{
-		setStyleSheet("QFrame#BreadcrumbsAddressBar { border: 1px solid gray; }\n");
+		setStyleSheet("QFrame#BreadcrumbsAddressBar { border: 1px solid gray; }");
 	}
 
 	p_style_crumbs = new StyleProxy(QStyleFactory::create(qApp->style()->objectName()), ptr_theme->icon(Theme::Icon::Chevron_Right));
@@ -558,7 +558,7 @@ void BreadcrumbsAddressBar::_insert_crumb(const QString& path)
 	btn->setText(path_title(path));
 	set_path_property(btn, path);
 	connect(btn, &StyledToolButton::clicked, this, &::BreadcrumbsAddressBar::crumb_clicked);
-	MenuListView* menu = new MenuListView(btn);
+	MenuListView* menu = new MenuListView(btn, ptr_theme);
 	connect(menu, &MenuListView::aboutToShow, this, &BreadcrumbsAddressBar::crumb_menu_show);
 	menu->setModel(p_fs_model);
 	connect(menu, &MenuListView::clicked, this, &BreadcrumbsAddressBar::crumb_menuitem_clicked);

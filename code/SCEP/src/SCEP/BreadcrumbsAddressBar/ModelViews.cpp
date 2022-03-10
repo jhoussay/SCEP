@@ -5,6 +5,7 @@
 
 #include <SCEP/BreadcrumbsAddressBar/ModelViews.h>
 #include <SCEP/win32_utils.h>
+#include <SCEP/Theme.h>
 //
 #include <QFileInfo>
 #include <QDir>
@@ -131,7 +132,7 @@ void FilenameModel::setPathPrefix(QString prefix, Mode mode)
 //
 //
 //
-ListView::ListView(MenuListView* pMenuListView)
+ListView::ListView(MenuListView* pMenuListView, Theme* ptrTheme)
 	:	QListView(pMenuListView)
 	,	ptr_menuListView(pMenuListView)
 {
@@ -140,19 +141,28 @@ ListView::ListView(MenuListView* pMenuListView)
 	setFrameShape(QFrame::NoFrame);
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-
 	setMouseTracking(true); // receive mouse move events
 	setFocusPolicy(Qt::NoFocus); // no focus rect
 }
 //
 QSize ListView::sizeHint() const
 {
-	return ptr_menuListView ? ptr_menuListView->size_hint() : QSize();
+	if (ptr_menuListView)
+	{
+		static constexpr int BorderWidth = 0;
+
+		QSize size = ptr_menuListView->size_hint();
+		return QSize(size.width()+BorderWidth, size.height()+BorderWidth);
+	}
+	else
+	{
+		return QSize();
+	}
 }
 //
 QSize ListView::minimumSizeHint() const
 {
-	return ptr_menuListView ? ptr_menuListView->size_hint() : QSize();
+	return sizeHint();
 }
 //
 void ListView::mousePressEvent(QMouseEvent *event)
@@ -187,14 +197,16 @@ void ListView::keyPressEvent(QKeyEvent *event)
 //
 //
 //
-MenuListView::MenuListView(QWidget* parent)
+MenuListView::MenuListView(QWidget* parent, Theme* ptrTheme)
 	:	QMenu(parent)
 {
-	p_listview = new ListView(this);
+	p_listview = new ListView(this, ptrTheme);
 
 	QWidgetAction* act_wgt = new QWidgetAction(this);
 	act_wgt->setDefaultWidget(p_listview);
 	addAction(act_wgt);
+	// Resolving some dark style problems
+	setStyleSheet("QMenu { background: palette(base); }");
 
 	connect(p_listview, &ListView::activated, this, &MenuListView::activated);
 	connect(p_listview, &ListView::clicked, this, &MenuListView::clicked);

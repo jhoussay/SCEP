@@ -9,6 +9,82 @@
 #include <iostream>
 #include <vector>
 //
+static QString Application_DarkStyleSheet = 
+R"(QToolTip {
+	color: #ffffff;
+	background-color: #2a82da;
+	border: 1px solid white;
+}
+QMenu::separator {
+	height: 1px;
+	background: white;
+}
+/* https://gist.github.com/Calinou/ef4e40fa5974bbdb39335c3b8d1b7492*/
+/* Scrollbar */
+/* From Quassel Wiki: http://sprunge.us/iZGB */
+QScrollBar {
+	background: palette(base);
+	margin: 0;
+}
+QScrollBar:hover {
+	/* Optional: Subtle accent of scrolling area on hover */
+	background: #161616; /* base +2 */
+}
+QScrollBar:vertical {
+	width: 11px;
+}
+QScrollBar:horizontal {
+	height: 11px;
+}
+
+QScrollBar::handle {
+	padding: 0;
+	margin: 2px;
+	border-radius: 2px;
+	border: 2px solid palette(mid);
+	background: palette(mid);
+}
+
+QScrollBar::handle:vertical {
+	min-height: 20px;
+	min-width: 0px;
+}
+
+QScrollBar::handle:horizontal {
+	min-width: 20px;
+	min-height: 0px;
+}
+QScrollBar::handle:hover {
+	border-color: palette(light);
+	background: palette(light);
+}
+QScrollBar::handle:pressed {
+	background: palette(light);
+	border-color: palette(light);
+}
+
+QScrollBar::add-line , QScrollBar::sub-line {
+	height: 0px;
+	border: 0px;
+}
+QScrollBar::up-arrow, QScrollBar::down-arrow {
+	border: 0px;
+	width: 0px;
+	height: 0px;
+}
+
+QScrollBar::add-page, QScrollBar::sub-page {
+	background: none;
+})";
+//
+QString Application_LightStyleSheet = 
+R"(QToolTip {
+	color: #ffffff;
+	background-color: #2a82da;
+	border: 1px solid white; })";
+//
+//
+//
 Theme::Theme()
 {
 	m_iconPath = 
@@ -55,7 +131,7 @@ Theme::Theme()
 			buffer[1] << 8 |
 			buffer[0]);
 
-		m_type = Type::Light; //(i == 1) ? Type::Light : Type::Dark;
+		m_type = (i == 1) ? Type::Light : Type::Dark;
 	}
 
 
@@ -95,12 +171,11 @@ Theme::Theme()
 		darkPalette.setColor(QPalette::Disabled, QPalette::Light, darkGray);
 
 		qApp->setPalette(darkPalette);
-
-		QString styleSheet = 
-			"QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }\n"
-			"QMenu { background: palette(base); }\n"
-			"QMenu::separator { height: 1px; background: white; }";
-		qApp->setStyleSheet(styleSheet);
+		qApp->setStyleSheet(Application_DarkStyleSheet);
+	}
+	else
+	{
+		qApp->setStyleSheet(Application_LightStyleSheet);
 	}
 }
 //

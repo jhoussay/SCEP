@@ -40,6 +40,10 @@ TODO
 - [x] Open new tab with a dedicated option in the context menu displayed for folders
 - [ ] Detect media added or removed
 - [ ] Handle shortcuts in both windows (Qt and win32) : CTRL + T, CTRL+W, CTRL+L...
+- [ ] Breadcrumb bar : highlight current folder (with bold font) in menus
+- [ ] Enhance light palette to match the windows palette
+- [ ] Restore window geometry at start
+- [ ] User defined theme : dark, light, auto. Will need restart to take effect.
 
 ### Misc
 
