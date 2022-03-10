@@ -8,6 +8,7 @@
 #include <SCEP/BreadcrumbsAddressBar/ModelViews.h>
 #include <SCEP/BreadcrumbsAddressBar/Stylesheets.h>
 #include <SCEP/win32_utils.h>
+#include <SCEP/Theme.h>
 //
 #include <QStyleOptionToolButton>
 #include <QStyleFactory>
@@ -258,11 +259,17 @@ inline void set_path_property(QObject* pObject, const QString& path)
 //
 QSize TRANSP_ICON_SIZE = {40, 40}; // px, size of generated semi-transparent icons
 //
-BreadcrumbsAddressBar::BreadcrumbsAddressBar(QWidget* parent)
+BreadcrumbsAddressBar::BreadcrumbsAddressBar(Theme* ptrTheme, QWidget* parent)
 	:	QFrame(parent)
+	,	ptr_theme(ptrTheme)
 {
-	p_style_crumbs = new StyleProxy(QStyleFactory::create(qApp->style()->objectName()),
-									QPixmap(":/SCEP/icons/iconfinder_icon-ios7-arrow-right_211607.png")	);
+	setObjectName("BreadcrumbsAddressBar");
+	if (ptr_theme->type() == Theme::Type::Dark)
+	{
+		setStyleSheet("QFrame#BreadcrumbsAddressBar { border: 1px solid gray; }\n");
+	}
+
+	p_style_crumbs = new StyleProxy(QStyleFactory::create(qApp->style()->objectName()), ptr_theme->icon(Theme::Icon::Chevron_Right));
 
 	QHBoxLayout* pLayout = new QHBoxLayout(this);
 
@@ -309,10 +316,12 @@ BreadcrumbsAddressBar::BreadcrumbsAddressBar(QWidget* parent)
 	p_btn_root_crumb->setAutoRaise(true);
 	p_btn_root_crumb->setPopupMode(QToolButton::InstantPopup);
 	p_btn_root_crumb->setArrowType(Qt::RightArrow);
-	p_btn_root_crumb->setStyleSheet(Style_root_toolbutton);
+	p_btn_root_crumb->setStyleSheet(Style_root_toolbutton
+		.arg(ptr_theme->iconPath(Theme::Icon::Chevron_Right))
+		.arg(ptr_theme->iconPath(Theme::Icon::Chevron_Left)));
 	p_btn_root_crumb->setMinimumSize(p_btn_root_crumb->minimumSizeHint());
 	p_crumbs_cont_layout->addWidget(p_btn_root_crumb);
-	QMenu* menu = new QMenu(p_btn_root_crumb); // FIXME:
+	QMenu* menu = new QMenu(p_btn_root_crumb);
 	connect(menu, &QMenu::aboutToShow, this, &BreadcrumbsAddressBar::_hidden_crumbs_menu_show);
 	connect(menu, &QMenu::aboutToHide, p_mouse_pos_timer, &QTimer::stop);
 	p_btn_root_crumb->setMenu(menu);

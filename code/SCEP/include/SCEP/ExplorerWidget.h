@@ -18,14 +18,14 @@ public:
 	/**
 	 *	@brief		
 	 */
-	ExplorerWidget(QWidget* pParent = nullptr, Qt::WindowFlags f = {});
+	ExplorerWidget(Theme* ptrTheme, QWidget* pParent = nullptr, Qt::WindowFlags f = {});
 	/**
 	 *	@brief		
 	 */
 	virtual ~ExplorerWidget();
 
 public:
-	ErrorPtr init(Theme* ptr_theme, const QString& path = {});
+	ErrorPtr init(const QString& path = {});
 
 	ErrorPtr setCurrentPath(const QString& path);
 	QString currentPath() const;
@@ -43,6 +43,7 @@ private:
 	void updateEmbeddedWidget();
 
 private:
+	Theme* ptr_theme = nullptr;
 	ExplorerWrapper* p_wrapper = nullptr;
 	HWND m_windowId = 0;
 	bool m_visibleExplorer = false;

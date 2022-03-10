@@ -12,7 +12,15 @@
         <file>SCEP/images/SCEP-simple.png</file>
         <file>SCEP/icons/about-48-dark.png</file>
         <file>SCEP/icons/about-48-light.png</file>
-        <file>SCEP/icons/iconfinder_icon-ios7-arrow-left_211689.png</file>
-        <file>SCEP/icons/iconfinder_icon-ios7-arrow-right_211607.png</file>
+        <file>SCEP/icons/chevron-left-48-dark.png</file>
+        <file>SCEP/icons/chevron-left-48-light.png</file>
+        <file>SCEP/icons/chevron-right-48-dark.png</file>
+        <file>SCEP/icons/chevron-right-48-light.png</file>
+        <file>SCEP/icons/left-48-dark.png</file>
+        <file>SCEP/icons/left-48-light.png</file>
+        <file>SCEP/icons/right-48-dark.png</file>
+        <file>SCEP/icons/right-48-light.png</file>
+        <file>SCEP/icons/up-48-dark.png</file>
+        <file>SCEP/icons/up-48-light.png</file>
     </qresource>
 </RCC>

@@ -16,10 +16,10 @@
  */
 QString Style_root_toolbutton =
 	"QToolButton::right-arrow {\n"
-	"	image: url(:/SCEP/icons/iconfinder_icon-ios7-arrow-right_211607.png);\n"
+	"	image: url(%1);\n"
 	"}\n"
 	"QToolButton::left-arrow {\n"
-	"	image: url(:/SCEP/icons/iconfinder_icon-ios7-arrow-left_211689.png);\n"
+	"	image: url(%2);\n"
 	"}\n"
 	"QToolButton::menu-indicator {\n"
 	"	image: none; /* https://stackoverflow.com/a/19993662 */\n"

@@ -169,12 +169,12 @@ void MainWindow::addNewTab(QString path, NewTabPosition position, NewTabBehaviou
 
 	setUpdatesEnabled(false);
 
-	ExplorerWidget* pExplorerWidget = new ExplorerWidget();
+	ExplorerWidget* pExplorerWidget = new ExplorerWidget(ptr_theme);
 	connect(pExplorerWidget, &ExplorerWidget::loading, this, &MainWindow::loading);
 	connect(pExplorerWidget, &ExplorerWidget::pathChanged, this, &MainWindow::pathChanged);
 	connect(pExplorerWidget, &ExplorerWidget::openNewTab, this, &MainWindow::addNewTab);
 	connect(pExplorerWidget, &ExplorerWidget::closed, this, &MainWindow::tabClosed);
-	if (ErrorPtr pError = pExplorerWidget->init(ptr_theme, path))
+	if (ErrorPtr pError = pExplorerWidget->init(path))
 	{
 		displayError(pError);
 		delete pExplorerWidget;
@@ -189,21 +189,39 @@ void MainWindow::addNewTab(QString path, NewTabPosition position, NewTabBehaviou
 		}
 		p_ui->tabWidget->insertTab(tabIndex, pExplorerWidget, tabName(pExplorerWidget->currentPath(), false));
 
-		QToolButton* pCloseButton = new QToolButton();
+		// Tab close button
+		QWidget* pCloseWidget = new QWidget(this);
+		QToolButton* pCloseButton = new QToolButton(pCloseWidget);
 		pCloseButton->setToolTip(tr("Close tab"));
 		pCloseButton->setAutoRaise(true);
 		pCloseButton->setIcon( ptr_theme->icon(Theme::Icon::CloseTab) );
 		pCloseButton->setMaximumSize( p_addTabButton->size() );
 		connect(pCloseButton, SIGNAL(clicked()), this, SLOT(onTabCloseRequested()));
-		p_ui->tabWidget->tabBar()->setTabButton(tabIndex, QTabBar::RightSide, pCloseButton);
+		// Layout
+		QSpacerItem* pCloseSpacer = new QSpacerItem(10, 5, QSizePolicy::Fixed, QSizePolicy::Minimum);
+		QHBoxLayout* pCloseLayout = new QHBoxLayout(pCloseWidget);
+		pCloseWidget->setLayout(pCloseLayout);
+		pCloseLayout->setContentsMargins(0, 0, 0, 0);
+		pCloseLayout->addWidget(pCloseButton);
+		pCloseLayout->addItem(pCloseSpacer);
+		p_ui->tabWidget->tabBar()->setTabButton(tabIndex, QTabBar::RightSide, pCloseWidget);
 
-		QLabel* pLabel = new QLabel();
-		pLabel->setText({});
-		pLabel->setMinimumSize( 20, 20 );
-		pLabel->setMaximumSize( 20, 20 );
-		pLabel->setScaledContents(true);
-		pLabel->setPixmap(m_fileIconProvider.icon(QFileInfo(path)).pixmap(QSize(32, 32)));
-		p_ui->tabWidget->tabBar()->setTabButton(tabIndex, QTabBar::LeftSide, pLabel);
+		// Tab icon
+		QWidget* pIconWidget = new QWidget(this);
+		QLabel* pIconLabel = new QLabel(pIconWidget);
+		pIconLabel->setText({});
+		pIconLabel->setMinimumSize( 20, 20 );
+		pIconLabel->setMaximumSize( 20, 20 );
+		pIconLabel->setScaledContents(true);
+		pIconLabel->setPixmap(m_fileIconProvider.icon(QFileInfo(path)).pixmap(QSize(32, 32)));
+		// Layout
+		QSpacerItem* pIconSpacer = new QSpacerItem(10, 5, QSizePolicy::Fixed, QSizePolicy::Minimum);
+		QHBoxLayout* pIconLayout = new QHBoxLayout(pIconWidget);
+		pIconWidget->setLayout(pIconLayout);
+		pIconLayout->setContentsMargins(0, 0, 0, 0);
+		pIconLayout->addItem(pIconSpacer);
+		pIconLayout->addWidget(pIconLabel);
+		p_ui->tabWidget->tabBar()->setTabButton(tabIndex, QTabBar::LeftSide, pIconWidget);
 
 		if (behaviour == NewTabBehaviour::Current)
 			p_ui->tabWidget->setCurrentIndex(tabIndex);
@@ -244,17 +262,72 @@ void MainWindow::about()
 	about.exec();
 }
 //
+int getCloseButtonIndex(QToolButton* pToolButton, QTabWidget* pTabWidget)
+{
+	for (int tabIndex = 0; tabIndex < pTabWidget->count(); tabIndex++)
+	{
+		if (QWidget* pWidget = pTabWidget->tabBar()->tabButton(tabIndex, QTabBar::RightSide))
+		{
+			if (QLayout* pLayout = pWidget->layout())
+			{
+				if (QLayoutItem* pLayoutItem = pLayout->itemAt(0))
+				{
+					if (QToolButton* pToolButtonTmp = dynamic_cast<QToolButton*>(pLayoutItem->widget()))
+					{
+						if (pToolButton == pToolButtonTmp)
+						{
+							return tabIndex;
+						}
+					}
+				}
+			}
+		}
+	}
+	return -1;
+}
+//
+int getTabIndex(ExplorerWidget* pExplorerWidget, QTabWidget* pTabWidget)
+{
+	for (int tabIndex = 0; tabIndex < pTabWidget->count(); tabIndex++)
+	{
+		if (pTabWidget->widget(tabIndex) == pExplorerWidget)
+		{
+			return tabIndex;
+		}
+	}
+	return -1;
+}
+//
+QLabel* getIconLabel(ExplorerWidget* pExplorerWidget, QTabWidget* pTabWidget)
+{
+	int tabIndex = getTabIndex(pExplorerWidget, pTabWidget);
+	if (tabIndex >= 0)
+	{
+		if (QWidget* pWidget = pTabWidget->tabBar()->tabButton(tabIndex, QTabBar::LeftSide))
+		{
+			if (QLayout* pLayout = pWidget->layout())
+			{
+				if (QLayoutItem* pLayoutItem = pLayout->itemAt(1))
+				{
+					if (QLabel* pLabel = dynamic_cast<QLabel*>(pLayoutItem->widget()))
+					{
+						return pLabel;
+					}
+				}
+			}
+		}
+	}
+	return nullptr;
+}
+//
 void MainWindow::onTabCloseRequested()
 {
 	if (QToolButton* pToolButton = dynamic_cast<QToolButton*>(sender()))
 	{
-		for (int tabIndex = 0; tabIndex < p_ui->tabWidget->count(); tabIndex++)
+		int tabIndex = getCloseButtonIndex(pToolButton, p_ui->tabWidget);
+		if (tabIndex >= 0)
 		{
-			if (p_ui->tabWidget->tabBar()->tabButton(tabIndex, QTabBar::RightSide) == pToolButton)
-			{
-				closeTab(tabIndex);
-				break;
-			}
+			closeTab(tabIndex);
 		}
 	}
 }
@@ -263,21 +336,12 @@ void MainWindow::loading(const QString& /*path*/)
 {
 	if (ExplorerWidget* pExplorerWidget = dynamic_cast<ExplorerWidget*>(sender()))
 	{
-		for (int tabIndex = 0; tabIndex < p_ui->tabWidget->count(); tabIndex++)
+		if (QLabel* pLabel = getIconLabel(pExplorerWidget, p_ui->tabWidget))
 		{
-			if (p_ui->tabWidget->widget(tabIndex) == pExplorerWidget)
-			{
-				QLabel* pLabel = dynamic_cast<QLabel*>(p_ui->tabWidget->tabBar()->tabButton(tabIndex, QTabBar::LeftSide));
-				if (pLabel)
-				{
-					pLabel->setPixmap({});
-					QMovie* pMovie = new QMovie(":/SCEP/icons/buffering2.gif", QByteArray(), pLabel);
-					pLabel->setMovie(pMovie);
-					pMovie->start();
-				}
-
-				break;
-			}
+			pLabel->setPixmap({});
+			QMovie* pMovie = new QMovie(":/SCEP/icons/buffering2.gif", QByteArray(), pLabel);
+			pLabel->setMovie(pMovie);
+			pMovie->start();
 		}
 	}
 }
@@ -286,23 +350,14 @@ void MainWindow::pathChanged(const QString& path, bool virtualFolder)
 {
 	if (ExplorerWidget* pExplorerWidget = dynamic_cast<ExplorerWidget*>(sender()))
 	{
-		for (int tabIndex = 0; tabIndex < p_ui->tabWidget->count(); tabIndex++)
+		int tabIndex = getTabIndex(pExplorerWidget, p_ui->tabWidget);
+		if (tabIndex >= 0)
+			p_ui->tabWidget->setTabText(tabIndex, tabName(path, virtualFolder));
+
+		if (QLabel* pLabel = getIconLabel(pExplorerWidget, p_ui->tabWidget))
 		{
-			if (p_ui->tabWidget->widget(tabIndex) == pExplorerWidget)
-			{
-				p_ui->tabWidget->setTabText(tabIndex, tabName(path, virtualFolder));
-
-				QLabel* pLabel = dynamic_cast<QLabel*>(p_ui->tabWidget->tabBar()->tabButton(tabIndex, QTabBar::LeftSide));
-				if (pLabel)
-				{
-					pLabel->setMovie({});
-					pLabel->setPixmap(m_fileIconProvider.icon(QFileInfo(path)).pixmap(QSize(32, 32)));
-				}
-
-
-
-				break;
-			}
+			pLabel->setMovie({});
+			pLabel->setPixmap(m_fileIconProvider.icon(QFileInfo(path)).pixmap(QSize(32, 32)));
 		}
 	}
 }

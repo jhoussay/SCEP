@@ -35,34 +35,34 @@ public:
 #ifdef FRAMELESS
 protected:
 	//  Double click title bar
-	void mouseDoubleClickEvent(QMouseEvent* pEvent) override;
+	void			mouseDoubleClickEvent(QMouseEvent* pEvent) override;
 	//  Click the title bar
-	void mousePressEvent(QMouseEvent* pEvent) override;
+	void			mousePressEvent(QMouseEvent* pEvent) override;
 	//  Release the title bar
-	void mouseReleaseEvent(QMouseEvent* pEvent) override;
+	void			mouseReleaseEvent(QMouseEvent* pEvent) override;
 	//  Drag title bar
-	void mouseMoveEvent(QMouseEvent* pEvent) override;
+	void			mouseMoveEvent(QMouseEvent* pEvent) override;
 #endif //FRAMELESS
 
 protected slots:
-	void	addNewTab(QString path = {}, NewTabPosition position = NewTabPosition::Last, NewTabBehaviour behaviour = NewTabBehaviour::Current);
-	void	closeCurrentTab();
-	void	showMenu();
-	void	about();
+	void			addNewTab(QString path = {}, NewTabPosition position = NewTabPosition::Last, NewTabBehaviour behaviour = NewTabBehaviour::Current);
+	void			closeCurrentTab();
+	void			showMenu();
+	void			about();
 
-	void	onTabCloseRequested();
+	void			onTabCloseRequested();
 
-	void	loading(const QString& path);
-	void	pathChanged(const QString& path, bool virtualFolder);
-	void	tabClosed();
+	void			loading(const QString& path);
+	void			pathChanged(const QString& path, bool virtualFolder);
+	void			tabClosed();
 
 protected:
-	void	closeEvent(QCloseEvent* pEvent) override;
+	void			closeEvent(QCloseEvent* pEvent) override;
 
 private:
-	void	closeTab(int tabIndex, bool closeAppIfNoRemainingTab = true);
-	void	updateIcons();
-	static QString tabName(const QString& tabPath, bool virtualFolder);
+	void			closeTab(int tabIndex, bool closeAppIfNoRemainingTab = true);
+	void			updateIcons();
+	static QString	tabName(const QString& tabPath, bool virtualFolder);
 
 private:
 	Theme* ptr_theme = nullptr;

@@ -19,7 +19,12 @@ public:
 		AddTab,
 		CloseTab,
 		Menu,
-		About
+		About,
+		Up,
+		Left,
+		Right,
+		Chevron_Left,
+		Chevron_Right
 	};
 
 public:

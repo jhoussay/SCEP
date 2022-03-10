@@ -195,8 +195,6 @@ MenuListView::MenuListView(QWidget* parent)
 	QWidgetAction* act_wgt = new QWidgetAction(this);
 	act_wgt->setDefaultWidget(p_listview);
 	addAction(act_wgt);
-	// Resolving some dark style problems
-	setStyleSheet("QMenu { background: palette(base); }");
 
 	connect(p_listview, &ListView::activated, this, &MenuListView::activated);
 	connect(p_listview, &ListView::clicked, this, &MenuListView::clicked);

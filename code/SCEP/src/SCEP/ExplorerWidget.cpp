@@ -60,8 +60,9 @@ static HWND CreateTheWindow(LPCWSTR WindowTitle)
 //
 //
 //
-ExplorerWidget::ExplorerWidget(QWidget* pParent, Qt::WindowFlags f)
+ExplorerWidget::ExplorerWidget(Theme* ptrTheme, QWidget* pParent, Qt::WindowFlags f)
 	:	QWidget(pParent, f)
+	,	ptr_theme(ptrTheme)
 {
 	p_wrapper = new ExplorerWrapper();
 	connect(p_wrapper, SIGNAL(loading(QString)), this, SIGNAL(loading(QString)));
@@ -81,7 +82,7 @@ ExplorerWidget::~ExplorerWidget()
 	}
 }
 //
-ErrorPtr ExplorerWidget::init(Theme* ptr_theme, const QString& path)
+ErrorPtr ExplorerWidget::init(const QString& path)
 {
 	// Initialize the explorer
 	CALL( p_wrapper->initialize(ptr_theme, path) );

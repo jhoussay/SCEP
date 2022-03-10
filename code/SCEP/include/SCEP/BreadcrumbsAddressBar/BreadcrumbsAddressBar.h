@@ -26,6 +26,8 @@ class QToolButton;
 #include <vector>
 #include <optional>
 
+class Theme;
+
 /**
  *	@ingroup				SCEP
  *
@@ -62,7 +64,7 @@ signals:
 	void					path_selected(const QString& path);
 
 public:
-	BreadcrumbsAddressBar(QWidget* parent = nullptr);
+	BreadcrumbsAddressBar(Theme* ptrTheme, QWidget* parent = nullptr);
 
 protected:
 	/**
@@ -198,6 +200,7 @@ protected:
 	void					mouse_pos_timer_event();
 
 private:
+	Theme*					ptr_theme = nullptr;
 	StyleProxy*				p_style_crumbs = nullptr;
 	QFileIconProvider		m_file_ico_prov;
 	FilenameModel*			p_fs_model = nullptr;

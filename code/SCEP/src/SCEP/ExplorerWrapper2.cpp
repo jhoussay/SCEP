@@ -104,8 +104,9 @@ inline QString path(PCIDLIST_ABSOLUTE pidlFolder, bool& virtualFolder)
 //
 //
 //
-ExplorerWrapper2::ExplorerWrapper2(QObject* pParent)
+ExplorerWrapper2::ExplorerWrapper2(Theme* ptrTheme, QObject* pParent)
 	:	QObject(pParent)
+	,	ptr_theme(ptrTheme)
 	,	m_cRef(1)
 	,	m_hwnd(nullptr)
 	,	m_fPerformRenavigate(false)
@@ -121,7 +122,7 @@ ExplorerWrapper2::~ExplorerWrapper2()
 	//}
 }
 //
-ErrorPtr ExplorerWrapper2::initialize(Theme* ptr_theme, const QString& path)
+ErrorPtr ExplorerWrapper2::initialize(const QString& path)
 {
 	static LPCWSTR sClassName = L"MyClass";
 
@@ -142,7 +143,7 @@ ErrorPtr ExplorerWrapper2::initialize(Theme* ptr_theme, const QString& path)
 	RegisterClassEx(&WndClass);
 
 	// Create & show the window
-	m_hwnd = CreateWindowEx(WS_EX_STATICEDGE,
+	m_hwnd = CreateWindowEx(WS_EX_APPWINDOW,
 							sClassName,
 							L"SCEP Win32 Window",
 							WS_OVERLAPPEDWINDOW,

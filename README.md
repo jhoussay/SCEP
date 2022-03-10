@@ -31,7 +31,7 @@ TODO
 - [ ] Tab context menu : close tab, duplicate tab, copy full path to clipboard, close other tabs
 - [ ] Close tab with middle click
 - [ ] Installation program
-- [ ] Handle "&" in current folder
+- [ ] Handle "&" in tab text
 - [ ] Doxygen comments and html generation
 - [x] "Translate" pathes as explorer.exe does.
 - [ ] Single instance
@@ -39,6 +39,7 @@ TODO
 - [x] Open new tab with middle click on a folder
 - [x] Open new tab with a dedicated option in the context menu displayed for folders
 - [ ] Detect media added or removed
+- [ ] Handle shortcuts in both windows (Qt and win32) : CTRL + T, CTRL+W, CTRL+L...
 
 ### Misc
 

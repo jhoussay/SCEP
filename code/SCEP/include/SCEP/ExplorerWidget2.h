@@ -10,6 +10,7 @@ class BreadcrumbsAddressBar;
 class Theme;
 //
 class QToolBar;
+class QToolButton;
 //
 /**
  *	@ingroup			SCEP
@@ -23,14 +24,14 @@ public:
 	/**
 	 *	@brief		
 	 */
-	ExplorerWidget2(QWidget* pParent = nullptr, Qt::WindowFlags f = {});
+	ExplorerWidget2(Theme* ptrTheme, QWidget* pParent = nullptr, Qt::WindowFlags f = {});
 	/**
 	 *	@brief		
 	 */
 	virtual ~ExplorerWidget2();
 
 public:
-	ErrorPtr			init(Theme* ptr_theme, const QString& path = {});
+	ErrorPtr			init(const QString& path = {});
 
 	ErrorPtr			setCurrentPath(const QString& path);
 	QString				currentPath() const;
@@ -46,8 +47,12 @@ protected slots:
 	void				onPathChanged(const QString& path, bool success, bool virtualFolder);
 
 private:
-	ExplorerWrapper2*	p_wrapper		=	nullptr;	//!< Wrapper for explorer win32 window (without address bar)
-	QWidget*			p_widget		=	nullptr;	//!< Widget embedding explorer win32 window
-	BreadcrumbsAddressBar* p_addressBar	=	nullptr;	//!< Address bar widget
-	QToolBar*			p_toolBar		=	nullptr;	//!< ToolBar containing navigation buttons and address bar
+	Theme*				ptr_theme			=	nullptr;	//!< Application theme
+	ExplorerWrapper2*	p_wrapper			=	nullptr;	//!< Wrapper for explorer win32 window (without address bar)
+	QWidget*			p_widget			=	nullptr;	//!< Widget embedding explorer win32 window
+	QToolButton*		p_backwardButton	=	nullptr;	//!< Navigate backward button
+	QToolButton*		p_forwardButton		=	nullptr;	//!< Navigate forward button
+	QToolButton*		p_parentButton		=	nullptr;	//!< Navigate to parent folder button
+	BreadcrumbsAddressBar* p_addressBar		=	nullptr;	//!< Address bar widget
+	QToolBar*			p_toolBar			=	nullptr;	//!< ToolBar containing navigation buttons and address bar
 };

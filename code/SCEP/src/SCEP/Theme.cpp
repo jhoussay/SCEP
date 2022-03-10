@@ -13,10 +13,15 @@ Theme::Theme()
 {
 	m_iconPath = 
 	{
-		{Icon::AddTab,		":/SCEP/icons/plus-48-%1.png"},
-		{Icon::CloseTab,	":/SCEP/icons/close-48-%1.png"},
-		{Icon::Menu,		":/SCEP/icons/menu-48-%1.png"},
-		{Icon::About,		":/SCEP/icons/about-48-%1.png"}
+		{Icon::AddTab,			":/SCEP/icons/plus-48-%1.png"},
+		{Icon::CloseTab,		":/SCEP/icons/close-48-%1.png"},
+		{Icon::Menu,			":/SCEP/icons/menu-48-%1.png"},
+		{Icon::About,			":/SCEP/icons/about-48-%1.png"},
+		{Icon::Up,				":/SCEP/icons/up-48-%1.png"},
+		{Icon::Left,			":/SCEP/icons/left-48-%1.png"},
+		{Icon::Right,			":/SCEP/icons/right-48-%1.png"},
+		{Icon::Chevron_Left,	":/SCEP/icons/chevron-left-48-%1.png"},
+		{Icon::Chevron_Right,	":/SCEP/icons/chevron-right-48-%1.png"}
 	};
 
 
@@ -50,7 +55,7 @@ Theme::Theme()
 			buffer[1] << 8 |
 			buffer[0]);
 
-		m_type = (i == 1) ? Type::Light : Type::Dark;
+		m_type = Type::Light; //(i == 1) ? Type::Light : Type::Dark;
 	}
 
 
@@ -75,7 +80,7 @@ Theme::Theme()
 		darkPalette.setColor(QPalette::ToolTipBase, Qt::white);
 		darkPalette.setColor(QPalette::ToolTipText, Qt::white);
 		darkPalette.setColor(QPalette::Text, Qt::white);
-		darkPalette.setColor(QPalette::Button, darkGray);
+		darkPalette.setColor(QPalette::Button, black);
 		darkPalette.setColor(QPalette::ButtonText, Qt::white);
 		darkPalette.setColor(QPalette::BrightText, Qt::red);
 		darkPalette.setColor(QPalette::Link, blue);
@@ -83,16 +88,19 @@ Theme::Theme()
 		darkPalette.setColor(QPalette::Highlight, blue);
 		darkPalette.setColor(QPalette::HighlightedText, Qt::black);
 	
-		darkPalette.setColor(QPalette::Active, QPalette::Button, gray.darker());
+		//darkPalette.setColor(QPalette::Active, QPalette::Button, black);
 		darkPalette.setColor(QPalette::Disabled, QPalette::ButtonText, gray);
 		darkPalette.setColor(QPalette::Disabled, QPalette::WindowText, gray);
 		darkPalette.setColor(QPalette::Disabled, QPalette::Text, gray);
 		darkPalette.setColor(QPalette::Disabled, QPalette::Light, darkGray);
 
-
-
 		qApp->setPalette(darkPalette);
-		qApp->setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }");
+
+		QString styleSheet = 
+			"QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }\n"
+			"QMenu { background: palette(base); }\n"
+			"QMenu::separator { height: 1px; background: white; }";
+		qApp->setStyleSheet(styleSheet);
 	}
 }
 //

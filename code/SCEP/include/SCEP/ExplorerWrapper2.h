@@ -22,11 +22,11 @@ class ExplorerWrapper2 : public QObject, public IServiceProvider, public IExplor
 	Q_OBJECT
 
 public:
-	ExplorerWrapper2(QObject* pParent = nullptr);
+	ExplorerWrapper2(Theme* ptrTheme, QObject* pParent = nullptr);
 	~ExplorerWrapper2();
 
 public:
-	ErrorPtr				initialize(Theme* ptr_theme, const QString& path = {});
+	ErrorPtr				initialize(const QString& path = {});
 	HWND					hwnd() const;
 	void					setVisible(bool visible);
 	ErrorPtr				setCurrentPath(const QString& path);
@@ -65,6 +65,8 @@ private:
 	void					notifyContextMenuCustomOption(int iOption, const QString& contextMenuFocusedPath);
 
 private:
+	Theme*					ptr_theme = nullptr;
+
 	long					m_cRef = 0;
 	HWND					m_hwnd = 0;
 	HRESULT					m_hrOleInit = 0;
