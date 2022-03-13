@@ -48,5 +48,6 @@ rem -----
 cd %~dp0/code
 rem rm .qmake.stash
 "%QT_DIR%\bin\qmake.exe" -tp vc -r SCEP.pro
+cd %~dp0
 
 :end
