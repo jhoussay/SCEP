@@ -5,6 +5,9 @@
 
 #pragma once
 
+#include <SCEP/SCEP.h>
+#include <SCEP/Navigation.h>
+
 class FilenameModel;
 class StyleProxy;
 class AddressLineEdit;
@@ -48,20 +51,20 @@ signals:
 	/**
 	 *	@brief				failed to list a directory
 	 */
-	void					listdir_error(const QString& path);
+	void					listdir_error(const NavigationPath& path);
 	/**
 	 *	@brief				entered path does not exist
 	 */
-	void					path_error(const QString& path);
+	void					path_error(const NavigationPath& path);
 
 	/**
 	 *	@brief				Signal emitted to request a new path
 	 */
-	void					path_requested(const QString& path);
+	void					path_requested(const NavigationPath& path);
 	/**
 	 *	@brief				Signal emitted when a new path has beed selected
 	 */
-	void					path_selected(const QString& path);
+	void					path_selected(const NavigationPath& path);
 
 public:
 	BreadcrumbsAddressBar(Theme* ptrTheme, QWidget* parent = nullptr);
@@ -71,11 +74,6 @@ protected:
 	 *	@brief				Init QCompleter to work with filesystem
 	 */
 	QCompleter*				init_completer(QLineEdit* edit_widget, FilenameModel* model);
-
-	/**
-	 *	@brief				Path -> QIcon
-	 */
-	QIcon					get_icon(const QString& path);
 
 	void					set_line_address_closeOnFocusOut(bool closeOnFocusOut);
 
@@ -92,20 +90,9 @@ protected:
 	void					init_rootmenu_places(QMenu* menu);
 
 	/**
-	 *	@brief				Try to get path label using Shell32 on Windows
-	 */
-	QString					get_path_label(QString drive_path);
-
-	struct Location
-	{
-		QString name;
-		QString path;
-	};
-
-	/**
 	 *	@brief				List (name, path) locations in Network Shortcuts folder on Windows
 	 */
-	static std::vector<Location> list_network_locations();
+	static std::vector<NavigationPath> list_network_locations();
 
 	/**
 	 *	@brief				Init or rebuild device actions in menu
@@ -113,13 +100,8 @@ protected:
 	void					update_rootmenu_devices();
 
 	void					_clear_crumbs();
-	
-	/**
-	 *	@brief				Get folder name or drive name
-	 */
-	static QString			path_title(const QString& path);
 
-	void					_insert_crumb(const QString& path);
+	void					_insert_crumb(const NavigationPath& path);
 
 	void					crumb_mouse_move(QMouseEvent* event);
 
@@ -127,10 +109,6 @@ protected:
 	 *	@brief				SLOT: breadcrumb menu item was clicked
 	 */
 	void					crumb_menuitem_clicked(const QModelIndex& index);
-	/**
-	 *	@brief				SLOT: breadcrumb was clicked
-	 */
-	void					crumb_clicked();
 
 	/**
 	 *	@brief				SLOT: fill subdirectory list on menu open
@@ -141,25 +119,29 @@ public:
 	/**
 	 *	@brief				Set path displayed in this BreadcrumbsAddressBar
 	 *	@param path			New path
-	 *	@param virtualFolder Indicates whether it is a virtual folder
 	 *	@return				Returns `False` if path does not exist or a permission error occurs (for a non virtual folder only).
 	 */
-	bool					set_path(QString path, bool virtualFolder);
+	bool					set_path(const NavigationPath& path);
 
 	/**
 	 *	@brief				Display loading icon
 	 *	@param path			Path being loaded
 	 */
-	void					set_loading(const QString& path);
+	void					set_loading(const NavigationPath& path);
 
 protected slots:
 	/**
 	 *	@brief				Request a new path
 	 *
-	 *	Can be used as a SLOT: `sender().path` is used if `path` is `None`
 	 *	Will provoque the emission of the `path_requested` signal.
 	 */
-	void					requestPathChange(QString path = {});
+	void					requestPathChange(const NavigationPath& path);
+	/**
+	 *	@brief				Request a new path, read from the sender of the signal.
+	 *
+	 *	Will call requestPathChange()
+	 */
+	void					requestSenderPathChange();
 
 protected:
 	/**
@@ -171,7 +153,7 @@ public:
 	/**
 	 *	@brief				Get path displayed in this BreadcrumbsAddressBar
 	 */
-	const QString&			path() const;
+	const NavigationPath&	path() const;
 
 protected:
 	/**
@@ -213,7 +195,7 @@ private:
 	QWidget*				p_crumbs_panel = nullptr;
 	QWidget*				p_switch_space = nullptr;
 	bool					m_ignore_resize = false;
-	QString					m_path = {};
+	NavigationPath			m_path = {};
 	bool					m_line_address_closeOnFocusOut = true;
 	std::vector<QAction*>	m_actions_hidden_crumbs;
 	std::vector<QAction*>	m_actions_devices;

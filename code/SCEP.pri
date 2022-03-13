@@ -4,6 +4,8 @@ CONFIG += c++17
 exists($$_PRO_FILE_PWD_/$${TARGET}.pro): HEADERS += $$_PRO_FILE_PWD_/$${TARGET}.pro
 exists($$_PRO_FILE_PWD_/$${TARGET}.prf): HEADERS += $$_PRO_FILE_PWD_/$${TARGET}.prf
 
+DEFINES *= NOMINMAX
+
 ROOT_DIR = $$PWD/..
 build_pass:CONFIG(debug, debug|release) {
     TYPE=debug

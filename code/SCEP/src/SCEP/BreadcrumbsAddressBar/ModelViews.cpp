@@ -6,6 +6,7 @@
 #include <SCEP/BreadcrumbsAddressBar/ModelViews.h>
 #include <SCEP/win32_utils.h>
 #include <SCEP/Theme.h>
+#include <SCEP/Navigation.h>
 //
 #include <QFileInfo>
 #include <QDir>
@@ -19,6 +20,7 @@
 FilenameModel::FilenameModel(QWidget* parent, Filter filter, IconProviderFn icon_provider)
 	:	QStringListModel(parent)
 {
+	// TODO QStringListModel --> QListModel with NavigationPath !
 	m_current_path = std::nullopt;
 	m_filter = filter;
 	m_icon_provider = icon_provider;
@@ -34,8 +36,7 @@ QVariant FilenameModel::data(const QModelIndex &index, int role) const
 	}
 	if (role == Qt::DisplayRole)
 	{
-		//return QFileInfo(rslt.toString()).fileName();
-		return getPathLabel(rslt.toString());
+		return NavigationPath(rslt.toString()).label();
 	}
 	else
 	{
@@ -75,7 +76,7 @@ QStringList FilenameModel::get_file_list(const QString& path) const
 inline bool isAbsolute(const QString& prefix, const QFileInfo& fi)
 {
 	// QFileInfo::isAbsolute returns true for some invalid pathes
-	return (! prefix.isEmpty()) && (prefix.contains("/") || prefix.contains("\\")) && fi.isAbsolute();
+	return (prefix.contains("/") || prefix.contains("\\")) && fi.isAbsolute();
 }
 //
 inline bool dirExists(const QString& prefix, const QFileInfo& fi)

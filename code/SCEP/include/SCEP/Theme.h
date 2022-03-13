@@ -4,6 +4,7 @@
 //
 #include <QString>
 #include <QPixmap>
+#include <QIcon>
 //
 class Theme
 {
@@ -33,8 +34,9 @@ public:
 
 public:
 	Type type() const;
-	QString iconPath(Icon iconType) const;
-	QPixmap icon(Icon iconType) const;
+	QString path(Icon iconType) const;
+	QPixmap pixmap(Icon iconType) const;
+	QIcon icon(Icon iconType) const;
 
 private:
 	Type m_type = Type::Light;

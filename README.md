@@ -43,7 +43,8 @@ TODO
 - [ ] Breadcrumb bar : highlight current folder (with bold font) in menus
 - [ ] Enhance light palette to match the windows palette
 - [ ] Restore window geometry at start
-- [ ] User defined theme : dark, light, auto. Will need restart to take effect.
+- [ ] Settings : show hidden files, single instance, theme color (dark, light, auto -> will need restart to take effect)
+- [ ] QCompleter : propose drives and known folders for not absolutes pathes
 
 ### Misc
 

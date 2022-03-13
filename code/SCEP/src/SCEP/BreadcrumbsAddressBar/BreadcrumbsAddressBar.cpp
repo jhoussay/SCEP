@@ -162,14 +162,11 @@ protected:
 			}
 			else if ( (event->key() == Qt::Key_Return) || (event->key() == Qt::Key_Enter) )
 			{
-				if (QFileInfo(text()).isAbsolute())
-				{
-					// We need to handle this key press to close QCompleter popup
-					QLineEdit::keyPressEvent(event);
+				// We need to handle this key press to close QCompleter popup
+				QLineEdit::keyPressEvent(event);
 
-					qDebug() << "keyPressEvent : Enter/Return -> " << event->key();
-					ptr_breadcrumbsAddressBar->requestPathChange(text());
-				}
+				qDebug() << "keyPressEvent : Enter/Return -> " << event->key();
+				ptr_breadcrumbsAddressBar->requestPathChange(text());
 			}
 			else if (event->key() == Qt::Key_Slash)
 			{
@@ -233,31 +230,31 @@ private:
 //
 static const char* Path_Id = "path";
 //
-inline QString get_path_property(const QObject* pObject)
+Q_DECLARE_METATYPE(NavigationPath);
+//
+inline NavigationPath get_path_property(const QObject* pObject)
 {
-	QString path;
+	NavigationPath path;
 	if (pObject)
 	{
 		QVariant propertyVariant = pObject->property(Path_Id);
 		//qDebug() << "Reading " << Qt::hex << pObject << " -> " << (propertyVariant.isValid() ? propertyVariant.toString() : "\"\"");
-		path = propertyVariant.toString();
+		path = propertyVariant.value<NavigationPath>();
 	}
 	return path;
 }
 //
-inline void set_path_property(QObject* pObject, const QString& path)
+inline void set_path_property(QObject* pObject, const NavigationPath& path)
 {
 	if (pObject)
 	{
-		pObject->setProperty(Path_Id, path);
+		pObject->setProperty(Path_Id, QVariant::fromValue<NavigationPath>(path));
 		//qDebug() << "Writing " << Qt::hex << pObject << " -> " << path;
 		assert(get_path_property(pObject) == path);
 	}
 }
 //
 //
-//
-QSize TRANSP_ICON_SIZE = {40, 40}; // px, size of generated semi-transparent icons
 //
 BreadcrumbsAddressBar::BreadcrumbsAddressBar(Theme* ptrTheme, QWidget* parent)
 	:	QFrame(parent)
@@ -269,11 +266,11 @@ BreadcrumbsAddressBar::BreadcrumbsAddressBar(Theme* ptrTheme, QWidget* parent)
 		setStyleSheet("QFrame#BreadcrumbsAddressBar { border: 1px solid gray; }");
 	}
 
-	p_style_crumbs = new StyleProxy(QStyleFactory::create(qApp->style()->objectName()), ptr_theme->icon(Theme::Icon::Chevron_Right));
+	p_style_crumbs = new StyleProxy(QStyleFactory::create(qApp->style()->objectName()), ptr_theme->pixmap(Theme::Icon::Chevron_Right));
 
 	QHBoxLayout* pLayout = new QHBoxLayout(this);
 
-	FilenameModel::IconProviderFn iconProvider = [this](const QString& path) -> QIcon {return get_icon(path);};
+	FilenameModel::IconProviderFn iconProvider = [this](const QString& path) -> QIcon { return NavigationPath(path).icon(); };
 
 	p_fs_model = new FilenameModel(this, FilenameModel::Filter::Dirs, iconProvider);
 
@@ -298,7 +295,7 @@ BreadcrumbsAddressBar::BreadcrumbsAddressBar(Theme* ptrTheme, QWidget* parent)
 	pLayout->addWidget(p_line_address);
 	// Add QCompleter to address line
 	QCompleter* pCompleter = init_completer(p_line_address, p_fs_model);
-	connect(pCompleter, qOverload<const QString&>(&QCompleter::activated), this, &BreadcrumbsAddressBar::requestPathChange);
+	connect(pCompleter, qOverload<const QString&>(&QCompleter::activated), this, &BreadcrumbsAddressBar::requestSenderPathChange);
 
 	// Container for `btn_crumbs_hidden`, `crumbs_panel`, `switch_space`
 	p_crumbs_container = new QWidget(this);
@@ -317,8 +314,8 @@ BreadcrumbsAddressBar::BreadcrumbsAddressBar(Theme* ptrTheme, QWidget* parent)
 	p_btn_root_crumb->setPopupMode(QToolButton::InstantPopup);
 	p_btn_root_crumb->setArrowType(Qt::RightArrow);
 	p_btn_root_crumb->setStyleSheet(Style_root_toolbutton
-		.arg(ptr_theme->iconPath(Theme::Icon::Chevron_Right))
-		.arg(ptr_theme->iconPath(Theme::Icon::Chevron_Left)));
+		.arg(ptr_theme->path(Theme::Icon::Chevron_Right))
+		.arg(ptr_theme->path(Theme::Icon::Chevron_Left)));
 	p_btn_root_crumb->setMinimumSize(p_btn_root_crumb->minimumSizeHint());
 	p_crumbs_cont_layout->addWidget(p_btn_root_crumb);
 	QMenu* menu = new QMenu(p_btn_root_crumb);
@@ -347,8 +344,8 @@ BreadcrumbsAddressBar::BreadcrumbsAddressBar(Theme* ptrTheme, QWidget* parent)
 	setMaximumHeight(p_line_address->height()); // FIXME:
 
 	m_ignore_resize = false;
-	m_path = QString();
-	set_path(m_path, false);
+	m_path = {};
+	set_path(m_path);
 }
 //
 QCompleter* BreadcrumbsAddressBar::init_completer(QLineEdit* edit_widget, FilenameModel* model)
@@ -365,23 +362,6 @@ QCompleter* BreadcrumbsAddressBar::init_completer(QLineEdit* edit_widget, Filena
 	edit_widget->setCompleter(completer);
 	connect(edit_widget, &QLineEdit::textEdited, [=](const QString& text) { model->setPathPrefix(text, FilenameModel::Mode::Completer); });
 	return completer;
-}
-//
-QIcon BreadcrumbsAddressBar::get_icon(const QString& path)
-{
-	QFileInfo fileinfo(path);
-	QIcon dat = m_file_ico_prov.icon(fileinfo);
-	if (fileinfo.isHidden())
-	{
-		QPixmap pmap(TRANSP_ICON_SIZE);
-		pmap.fill(Qt::transparent);
-		QPainter painter(&pmap);
-		painter.setOpacity(0.5);
-		dat.paint(&painter, 0, 0, TRANSP_ICON_SIZE.width(), TRANSP_ICON_SIZE.height());
-		painter.end();
-		dat = QIcon(pmap);
-	}
-	return dat;
 }
 //
 void BreadcrumbsAddressBar::set_line_address_closeOnFocusOut(bool closeOnFocusOut)
@@ -422,10 +402,10 @@ void BreadcrumbsAddressBar::_hidden_crumbs_menu_show()
 			{
 				if (QAbstractButton* pButton = dynamic_cast<QAbstractButton*>(i))
 				{
-					QString path = get_path_property(i);
-					QAction* action = new QAction(get_icon(path), pButton->text(), menu);
+					NavigationPath path = get_path_property(i);
+					QAction* action = new QAction(path.icon(), pButton->text(), menu);
 					set_path_property(action, path);
-					connect(action, SIGNAL(triggered(bool)), this, SLOT(requestPathChange()));
+					connect(action, SIGNAL(triggered(bool)), this, SLOT(requestSenderPathChange()));
 					menu->insertAction(first_action, action);
 					m_actions_hidden_crumbs.push_back(action);
 					first_action = action;
@@ -449,31 +429,26 @@ void BreadcrumbsAddressBar::init_rootmenu_places(QMenu* menu)
 	else
 		uname = tr("Home");
 
-	std::vector<std::pair<QString, QString>> location = 
+	std::vector<std::pair<QString, NavigationPath>> location = 
 	{
-		{ "Desktop", QStandardPaths::writableLocation(QStandardPaths::DesktopLocation) },
-		{ uname, QStandardPaths::writableLocation(QStandardPaths::HomeLocation) },
-		{ "Documents", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) },
-		{ "Downloads", QStandardPaths::writableLocation(QStandardPaths::DownloadLocation) }
+		{ "Desktop", NavigationPath(QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)) },
+		{ uname, NavigationPath(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)) },
+		{ "Documents", NavigationPath(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)) },
+		{ "Downloads", NavigationPath(QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)) }
 	};
 
 	for (auto [name, path] : location)
 	{
-		name = get_path_label(path); // JHO : win32
-		QAction* action = menu->addAction(get_icon(path), name);
+		name = path.label();
+		QAction* action = menu->addAction(path.icon(), name);
 		set_path_property(action, path);
-		connect(action, SIGNAL(triggered(bool)), this, SLOT(requestPathChange()));
+		connect(action, SIGNAL(triggered(bool)), this, SLOT(requestSenderPathChange()));
 	}
 }
 //
-QString BreadcrumbsAddressBar::get_path_label(QString drive_path)
+std::vector<NavigationPath> BreadcrumbsAddressBar::list_network_locations()
 {
-	return getPathLabel(drive_path);
-}
-//
-std::vector<BreadcrumbsAddressBar::Location> BreadcrumbsAddressBar::list_network_locations()
-{
-	std::vector<BreadcrumbsAddressBar::Location> rslt;
+	std::vector<NavigationPath> rslt;
 
 	QStandardPaths::StandardLocation HOME = QStandardPaths::HomeLocation;
 	QString user_folder = QStandardPaths::writableLocation(HOME);
@@ -485,7 +460,7 @@ std::vector<BreadcrumbsAddressBar::Location> BreadcrumbsAddressBar::list_network
 			continue;
 		QString path = link.symLinkTarget();
 		if (! path.isEmpty()) // `symLinkTarget` doesn't read e.g. FTP links
-			rslt.push_back({QFileInfo(i).fileName(), path});
+			rslt.push_back(NavigationPath(path));
 	}
 
 	return rslt;
@@ -500,27 +475,26 @@ void BreadcrumbsAddressBar::update_rootmenu_devices()
 	for (QStorageInfo i : QStorageInfo::mountedVolumes()) // QDir.drives():
 	{
 		QString path = i.rootPath();
+		NavigationPath navPath(path);
 		QString label = i.displayName();
 		if (label == path) // TODO JHO win32
-			label = get_path_label(path);
+			label = navPath.label();
 		QString trimmedPath = path;
 		if (trimmedPath.endsWith("/") || trimmedPath.endsWith("\\"))
 			trimmedPath = trimmedPath.left(trimmedPath.size()-1);
 		QString caption = QString("%1 (%2)").arg(label).arg(trimmedPath);
-		QAction* action = menu->addAction(get_icon(path), caption);
-		set_path_property(action, path);
-		connect(action, SIGNAL(triggered(bool)), this, SLOT(requestPathChange()));
+		QAction* action = menu->addAction(navPath.icon(), caption);
+		set_path_property(action, navPath);
+		connect(action, SIGNAL(triggered(bool)), this, SLOT(requestSenderPathChange()));
 		m_actions_devices.push_back(action);
 	}
 	// TODO JHO win32
 	// Network locations
-	for (Location location : list_network_locations())
+	for (NavigationPath path : list_network_locations())
 	{
-		const QString& label = location.name;
-		const QString& path = location.path;
-		QAction* action = menu->addAction(get_icon(path), label);
+		QAction* action = menu->addAction(path.icon(), path.label());
 		set_path_property(action, path);
-		connect(action, SIGNAL(triggered(bool)), this, SLOT(requestPathChange()));
+		connect(action, SIGNAL(triggered(bool)), this, SLOT(requestSenderPathChange()));
 		m_actions_devices.push_back(action);
 	}
 }
@@ -543,21 +517,16 @@ void BreadcrumbsAddressBar::_clear_crumbs()
 	}
 }
 //
-QString BreadcrumbsAddressBar::path_title(const QString& path)
-{
-	return getPathLabel(path);
-}
-//
-void BreadcrumbsAddressBar::_insert_crumb(const QString& path)
+void BreadcrumbsAddressBar::_insert_crumb(const NavigationPath& path)
 {
 	StyledToolButton* btn = new StyledToolButton(p_crumbs_panel, this);
 	btn->setAutoRaise(true);
 	btn->setPopupMode(QToolButton::MenuButtonPopup);
 	btn->setStyle(p_style_crumbs);
 	btn->setMouseTracking(true);
-	btn->setText(path_title(path));
+	btn->setText(path.label());
 	set_path_property(btn, path);
-	connect(btn, &StyledToolButton::clicked, this, &::BreadcrumbsAddressBar::crumb_clicked);
+	connect(btn, &StyledToolButton::clicked, this, &::BreadcrumbsAddressBar::requestSenderPathChange);
 	MenuListView* menu = new MenuListView(btn, ptr_theme);
 	connect(menu, &MenuListView::aboutToShow, this, &BreadcrumbsAddressBar::crumb_menu_show);
 	menu->setModel(p_fs_model);
@@ -583,27 +552,24 @@ void BreadcrumbsAddressBar::crumb_mouse_move(QMouseEvent* /*event*/)
 //
 void BreadcrumbsAddressBar::crumb_menuitem_clicked(const QModelIndex& index)
 {
-	requestPathChange(index.data(Qt::EditRole).toString());
-}
-//
-void BreadcrumbsAddressBar::crumb_clicked()
-{
-	requestPathChange(get_path_property(sender()));
+	// TODO direct access to model (when it handles NavigationPath)
+	requestPathChange(NavigationPath(index.data(Qt::EditRole).toString()));
 }
 //
 void BreadcrumbsAddressBar::crumb_menu_show()
 {
 	if (MenuListView* menu = dynamic_cast<MenuListView*>(sender()))
 	{
-		p_fs_model->setPathPrefix(get_path_property(menu->parent()), FilenameModel::Mode::Lister);
+		// TODO set NavigationPath (when it handles NavigationPath)
+		p_fs_model->setPathPrefix(get_path_property(menu->parent()).internalPath(), FilenameModel::Mode::Lister);
 		menu->clear_selection(); // clear currentIndex after applying new model
 		p_mouse_pos_timer->start(100);
 	}
 }
 //
-bool BreadcrumbsAddressBar::set_path(QString path, bool virtualFolder)
+bool BreadcrumbsAddressBar::set_path(const NavigationPath& path)
 {
-	qDebug() << "set_path" << path;
+	//qDebug() << "set_path" << path.path << path.virtualFolder;
 
 	// exit edit mode
 	_cancel_edit();
@@ -615,59 +581,41 @@ bool BreadcrumbsAddressBar::set_path(QString path, bool virtualFolder)
 	//p_path_icon->setScaledContents(false);
 	//p_path_icon->setMaximumSize(p_path_icon->width(), QWIDGETSIZE_MAX); 
 
-	if (virtualFolder)
+	if (! path.isExistingDirectory())
 	{
-		_clear_crumbs();
-		m_path = path;
-		p_line_address->setText(path);
-		_insert_crumb(path);
-
-		p_path_icon->setPixmap(get_icon(m_path).pixmap(16, 16));
-		crumb_hide_show();
-
-		emit path_selected(m_path);
+		emit path_error(path);
+		return false;
 	}
-	else
+	if (! path.isReadableDirectory())
 	{
-		path = QFileInfo(path).absoluteFilePath().replace("/", "\\");
+		emit listdir_error(path);
+		return false;
+	}
 
-		QFileInfo fi(path);
-		if (path.isEmpty() || (! fi.exists()) || (! fi.isDir()))
-		{
-			emit path_error(path);
-			return false;
-		}
-		QDir pathDir(path);
-		if (! pathDir.isReadable())
-		{
-			emit listdir_error(path);
-			return false;
-		}
-
-		_clear_crumbs();
-		m_path = path;
-		p_line_address->setText(path);
-		_insert_crumb(path);
+	_clear_crumbs();
+	m_path = path;
+	p_line_address->setText(path.displayPath(false));
 		
-		while (! pathDir.isRoot())
-		{
-			pathDir.cdUp();
-			_insert_crumb(pathDir.absolutePath().replace("/", "\\"));
-			//pathDir.cdUp();
-		}
-
-		p_path_icon->setPixmap(get_icon(m_path).pixmap(16, 16));
-		crumb_hide_show();
-
-		emit path_selected(m_path);
+	// Insert crumbs
+	NavigationPath pathTmp = m_path;
+	_insert_crumb(pathTmp);
+	while (pathTmp.hasParent())
+	{
+		pathTmp = pathTmp.parent().value();
+		_insert_crumb(pathTmp);
 	}
+
+	p_path_icon->setPixmap(m_path.pixmap(QSize(16, 16)));
+	crumb_hide_show();
+
+	emit path_selected(m_path);
 
 	return true;
 }
 //
-void BreadcrumbsAddressBar::set_loading(const QString& path)
+void BreadcrumbsAddressBar::set_loading(const NavigationPath& path)
 {
-	p_path_icon->setToolTip(tr("Loading %1...").arg(path));
+	p_path_icon->setToolTip(tr("Loading %1...").arg(path.displayPath()));
 	//p_path_icon->setScaledContents(true);
 	//p_path_icon->setMaximumSize(p_path_icon->width(), p_path_icon->width()); 
 	p_path_icon->setPixmap({});
@@ -675,24 +623,29 @@ void BreadcrumbsAddressBar::set_loading(const QString& path)
 	ptr_bufferingMovie->start();
 }
 //
-void BreadcrumbsAddressBar::requestPathChange(QString path)
+void BreadcrumbsAddressBar::requestPathChange(const NavigationPath& path)
 {
-	if (path.isEmpty() && sender())
-		path = get_path_property(sender());
-
-	path = QFileInfo(path).absoluteFilePath().replace("/", "\\");
-
 	emit path_requested(path);
+}
+//
+void BreadcrumbsAddressBar::requestSenderPathChange()
+{
+	if (sender())
+	{
+		NavigationPath path = get_path_property(sender());
+		if (! path.empty())
+			requestPathChange(path);
+	}
 }
 //
 void BreadcrumbsAddressBar::_cancel_edit()
 {
 	qDebug() << "_cancel_edit";
-	p_line_address->setText(path()); // revert path
+	p_line_address->setText(m_path.displayPath(false)); // revert path
 	show_address_field(false); // switch back to breadcrumbs view
 }
 //
-const QString& BreadcrumbsAddressBar::path() const
+const NavigationPath& BreadcrumbsAddressBar::path() const
 {
 	return m_path;
 }

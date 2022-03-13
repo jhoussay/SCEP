@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QStyleFactory>
 #include <QPalette>
+#include <QPainter>
 //
 #include <iostream>
 #include <vector>
@@ -12,8 +13,8 @@
 static QString Application_DarkStyleSheet = 
 R"(QToolTip {
 	color: #ffffff;
-	background-color: #2a82da;
-	border: 1px solid white;
+	background-color: #35322f;
+	border: 1px solid #5d5b59;
 }
 QMenu::separator {
 	height: 1px;
@@ -79,9 +80,9 @@ QScrollBar::add-page, QScrollBar::sub-page {
 //
 QString Application_LightStyleSheet = 
 R"(QToolTip {
-	color: #ffffff;
-	background-color: #2a82da;
-	border: 1px solid white; })";
+	color: #5d5b59;
+	background-color: white;
+	border: 1px solid #5d5b59; })";
 //
 //
 //
@@ -184,13 +185,34 @@ Theme::Type Theme::type() const
 	return m_type;
 }
 //
-QString Theme::iconPath(Icon iconType) const
+QString Theme::path(Icon iconType) const
 {
 	return m_iconPath.at(iconType).arg(m_type == Type::Dark ? "dark" : "light");
 }
 //
-QPixmap Theme::icon(Icon iconType) const
+QPixmap Theme::pixmap(Icon iconType) const
 {
-	return QPixmap( iconPath(iconType) );
+	return QPixmap( path(iconType) );
+}
+//
+QIcon Theme::icon(Icon iconType) const
+{
+	QPixmap enabledPixmap = pixmap(iconType);
+	
+	QPixmap disabledPixmap(enabledPixmap.size());
+	disabledPixmap.fill(Qt::transparent);
+	QPainter p(&disabledPixmap);
+	p.setBackgroundMode(Qt::TransparentMode);
+	p.setBackground(QBrush(Qt::transparent));
+	p.eraseRect(enabledPixmap.rect());
+	p.setOpacity(0.5);
+	p.drawPixmap(0, 0, enabledPixmap);
+	p.end();
+
+	QIcon ico(enabledPixmap);
+	ico.addPixmap(disabledPixmap, QIcon::Disabled, QIcon::Off);
+	ico.addPixmap(disabledPixmap, QIcon::Disabled, QIcon::On);
+	//QIcon ico(disabledPixmap);
+	return ico;
 }
 //

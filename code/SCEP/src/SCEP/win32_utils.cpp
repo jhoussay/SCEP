@@ -29,29 +29,3 @@ QString GetLastErrorAsString()
 	return message;
 }
 //
-QString getPathLabel(const QString& path)
-{
-	QString nativePath = QFileInfo(path).absoluteFilePath().replace("/", "\\");
-	std::wstring wpath = nativePath.toStdWString();
-
-	ITEMIDLIST* idlist;
-	HRESULT hr = SHParseDisplayName(wpath.c_str(), 0, &idlist, 0, 0);
-	if (! SUCCEEDED(hr))
-	{
-		QString label = QFileInfo(path).fileName();
-		qDebug() << "Could not get path label for " << path << ", defaulting to file name : " << label;
-		return label;
-	}
-
-	PWSTR name_ptr;
-	hr = SHGetNameFromIDList(idlist, SIGDN_PARENTRELATIVEFORADDRESSBAR, //PARENTRELATIVEEDITING,
-							&name_ptr);
-	
-	QString name = name_ptr && SUCCEEDED(hr) ? QString::fromWCharArray(name_ptr) : QString();
-
-	CoTaskMemFree(idlist);
-	CoTaskMemFree(name_ptr);
-
-	return name;
-}
-//

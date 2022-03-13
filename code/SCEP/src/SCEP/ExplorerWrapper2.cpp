@@ -46,60 +46,16 @@ inline IShellItem* CreateShellItem(const QString& path)
 
 	IShellItem* pShellItem = nullptr;
 
-	QFileInfo fi(path);
-	if (! path.isEmpty() && fi.exists(path) && fi.isDir())
+	if (! path.isEmpty())
 	{
 		std::wstring wpath = path.toStdWString();
-		std::array<wchar_t, BufferfSize> fullPath;
-
-		if (GetFullPathName(wpath.c_str(), BufferfSize, fullPath.data(), nullptr))
+		if (SUCCEEDED(SHCreateItemFromParsingName(wpath.c_str(), nullptr, IID_PPV_ARGS(&pShellItem))))
 		{
-			if (SUCCEEDED(SHCreateItemFromParsingName(fullPath.data(), nullptr, IID_PPV_ARGS(&pShellItem))))
-			{
-				return pShellItem;
-			}
+			return pShellItem;
 		}
 	}
 
 	return nullptr;
-}
-//
-inline QString path(PCIDLIST_ABSOLUTE pidlFolder, bool& virtualFolder)
-{
-	QString rslt = {};
-	virtualFolder = false;
-
-	PWSTR pszName = nullptr;
-
-	// Trying to get the file path
-	HRESULT hr = SHGetNameFromIDList(pidlFolder, SIGDN_FILESYSPATH, &pszName);
-	if (SUCCEEDED(hr))
-	{
-		rslt = QString::fromWCharArray(pszName);
-		CoTaskMemFree(pszName);
-	}
-	// Defaulting to the normal display
-	// example : "Network" virtual folder
-	else
-	{
-		// TODO : identify the "known folder" and convert it to QAbstractFileIconProvider::IconType
-		// and the replace "bool& virtualFolder" by this IconType.
-
-		hr = SHGetNameFromIDList(pidlFolder, SIGDN_NORMALDISPLAY, &pszName);
-		if (SUCCEEDED(hr))
-		{
-			virtualFolder = true;
-			rslt = QString::fromWCharArray(pszName);
-			CoTaskMemFree(pszName);
-		}
-		else
-		{
-			qWarning() << "path() failed";
-		}
-	}
-	
-	qDebug() << "path = " << rslt;
-	return rslt;
 }
 //
 //
@@ -122,7 +78,7 @@ ExplorerWrapper2::~ExplorerWrapper2()
 	//}
 }
 //
-ErrorPtr ExplorerWrapper2::initialize(const QString& path)
+ErrorPtr ExplorerWrapper2::initialize(const NavigationPath& path)
 {
 	static LPCWSTR sClassName = L"MyClass";
 
@@ -182,30 +138,30 @@ void ExplorerWrapper2::setVisible(bool visible)
 	}
 }
 //
-ErrorPtr ExplorerWrapper2::setCurrentPath(const QString& path)
+ErrorPtr ExplorerWrapper2::setCurrentPath(const NavigationPath& path)
 {
 	CHECK(p_peb, "ExplorerWrapper2::setCurrentPath() : No current instance.");
 
 //	QFileInfo pathInfo(path);
 //	CHECK(pathInfo.exists() && pathInfo.isDir(), "Invalid path");
 
-	IShellItem* psi = CreateShellItem(path);
+	IShellItem* psi = CreateShellItem(path.internalPath());
 	if (psi)
 	{
 		HRESULT hr = p_peb->BrowseToObject(psi, 0);
 		psi->Release();
-		CHECK(SUCCEEDED(hr), "Unable to set explorer current path \"" + path + "\" : " + GetLastErrorAsString());
+		CHECK(SUCCEEDED(hr), "Unable to set explorer current path \"" + path.displayPath() + "\" : " + GetLastErrorAsString());
 	}
 	else
 	{
-		emit pathChanged(path, false, false);
-		return createError("Unable to set explorer current path \"" + path + "\"");
+		emit pathChanged(path, false);
+		return createError("Unable to set explorer current path \"" + path.displayPath() + "\"");
 	}
 
 	return success();
 }
 //
-QString ExplorerWrapper2::currentPath() const
+const NavigationPath& ExplorerWrapper2::currentPath() const
 {
 	return m_currentPath;
 }
@@ -289,9 +245,7 @@ IFACEMETHODIMP ExplorerWrapper2::OnViewCreated(IShellView * psv)
 //
 IFACEMETHODIMP ExplorerWrapper2::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 {
-	bool virtualFolder = false;
-	QString loadingPath = path(pidlFolder, virtualFolder);
-
+	NavigationPath loadingPath(pidlFolder);
 	emit loading(loadingPath);
 
 	return S_OK;
@@ -299,22 +253,18 @@ IFACEMETHODIMP ExplorerWrapper2::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolde
 //
 IFACEMETHODIMP ExplorerWrapper2::OnNavigationComplete(PCIDLIST_ABSOLUTE pidlFolder)
 {
-	bool virtualFolder = false;
-	m_currentPath = path(pidlFolder, virtualFolder);
-
-	emit pathChanged(m_currentPath, true, virtualFolder);
-	//QTimer::singleShot(3000, [=](){emit pathChanged(m_currentPath, true, virtualFolder);});
+	m_currentPath = NavigationPath(pidlFolder);
+	emit pathChanged(m_currentPath, true);
 
 	return S_OK;
 }
 //
 IFACEMETHODIMP ExplorerWrapper2::OnNavigationFailed(PCIDLIST_ABSOLUTE pidlFolder)
 {
-	bool virtualFolder = false;
-	qDebug() << "Failed to navigated to " << path(pidlFolder, virtualFolder);
+	qDebug() << "Failed to navigated to " << NavigationPath(pidlFolder).displayPath();
 
 	// Force GUI cleaning
-	emit pathChanged(m_currentPath, false, virtualFolder);
+	emit pathChanged(m_currentPath, false);
 
 	return S_OK;
 }
@@ -370,7 +320,7 @@ LRESULT CALLBACK ExplorerWrapper2::wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, 
 	return iRet;
 }
 //
-ErrorPtr ExplorerWrapper2::onInitialize(const QString& path)
+ErrorPtr ExplorerWrapper2::onInitialize(const NavigationPath& path)
 {
 	// Get window size
 	RECT rc = GetWindowRectInClient(m_hwnd);
@@ -470,7 +420,7 @@ LRESULT CALLBACK ExplorerWrapper2::ShellWindowProcHook(HWND hwnd, UINT uMsg, WPA
 			else if (shellId > MAX_SHELL_ID)
 			{
 				pThis->notifyContextMenuCustomOption(shellId - MAX_SHELL_ID - 1, pThis->m_contextMenuFocusedPath);
-				pThis->m_contextMenuFocusedPath = QString();
+				pThis->m_contextMenuFocusedPath = {};
 			}
 			// Clean up
 			pThis->p_contextMenu2->Release();
@@ -523,13 +473,13 @@ LRESULT CALLBACK ExplorerWrapper2::ShellWindowProcHook(HWND hwnd, UINT uMsg, WPA
 							if (SUCCEEDED(hr))
 							{
 								// Path of the clicked item
-								QString path = pThis->currentPath() + "/" + QString::fromWCharArray(pszName);
+								QString path = pThis->currentPath().internalPath() + "/" + QString::fromWCharArray(pszName);
 		
 								// Ask for a new tab if the clicked item corresponds to an existing folder
 								QFileInfo fi(path);
 								if (fi.exists() && fi.isDir())
 								{
-									emit pThis->openNewTab(path, NewTabPosition::AfterCurrent, NewTabBehaviour::None);
+									emit pThis->openNewTab(NavigationPath(path), NewTabPosition::AfterCurrent, NewTabBehaviour::None);
 								}
 							}
 							// Clean up
@@ -555,7 +505,7 @@ LRESULT CALLBACK ExplorerWrapper2::ShellWindowProcHook(HWND hwnd, UINT uMsg, WPA
 	return CallWindowProc(pThis->p_shellWindowProcOld, hwnd, uMsg, wParam, lParam);
 }
 //
-QString GetDisplayNameOf(IShellFolder* shellFolder, LPITEMIDLIST pidl, SHGDNF /*uFlags*/)
+NavigationPath GetDisplayNameOf(IShellFolder* shellFolder, LPITEMIDLIST pidl, SHGDNF /*uFlags*/)
 {
 	STRRET StrRet;
 	StrRet.uType = STRRET_WSTR;
@@ -648,30 +598,22 @@ HMENU ExplorerWrapper2::CreateCustomPopupMenu()
 	return hmenu;
 }
 //
-std::map<long, QString> ExplorerWrapper2::getContextMenuCustomOptions(const QString& contextMenuFocusedPath)
+std::map<long, QString> ExplorerWrapper2::getContextMenuCustomOptions(const NavigationPath& contextMenuFocusedPath)
 {
 	std::map<long, QString> rslt;
-	if (! contextMenuFocusedPath.isEmpty())
+	if (contextMenuFocusedPath.isExistingDirectory())
 	{
-		QFileInfo fi(contextMenuFocusedPath);
-		if (fi.exists() && fi.isDir())
-		{
-			rslt[0] = tr("Open in a new tab");
-		}
+		rslt[0] = tr("Open in a new tab");
 	}
 	return rslt;
 }
 //
-void ExplorerWrapper2::notifyContextMenuCustomOption(int iOption, const QString& contextMenuFocusedPath)
+void ExplorerWrapper2::notifyContextMenuCustomOption(int iOption, const NavigationPath& contextMenuFocusedPath)
 {
 	assert(iOption == 0);
-	if (! contextMenuFocusedPath.isEmpty())
+	if (contextMenuFocusedPath.isExistingDirectory())
 	{
-		QFileInfo fi(contextMenuFocusedPath);
-		if (fi.exists() && fi.isDir())
-		{
-			emit openNewTab(contextMenuFocusedPath, NewTabPosition::AfterCurrent, NewTabBehaviour::None);
-		}
+		emit openNewTab(contextMenuFocusedPath, NewTabPosition::AfterCurrent, NewTabBehaviour::None);
 	}
 }
 //

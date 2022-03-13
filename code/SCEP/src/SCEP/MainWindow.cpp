@@ -182,9 +182,9 @@ void MainWindow::mouseMoveEvent(QMouseEvent* pEvent)
 //
 #endif //FRAMELESS
 //
-void MainWindow::addNewTab(QString path, NewTabPosition position, NewTabBehaviour behaviour)
+void MainWindow::addNewTab(NavigationPath path, NewTabPosition position, NewTabBehaviour behaviour)
 {
-	if (path.isEmpty())
+	if (path.empty())
 	{
 		path = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
 	}
@@ -209,7 +209,7 @@ void MainWindow::addNewTab(QString path, NewTabPosition position, NewTabBehaviou
 		{
 			tabIndex = p_ui->tabWidget->currentIndex() + 1;
 		}
-		p_ui->tabWidget->insertTab(tabIndex, pExplorerWidget, tabName(pExplorerWidget->currentPath(), false));
+		p_ui->tabWidget->insertTab(tabIndex, pExplorerWidget, tabName(pExplorerWidget->currentPath()));
 
 		// Tab close button
 		QWidget* pCloseWidget = new QWidget(this);
@@ -235,7 +235,7 @@ void MainWindow::addNewTab(QString path, NewTabPosition position, NewTabBehaviou
 		pIconLabel->setMinimumSize( 20, 20 );
 		pIconLabel->setMaximumSize( 20, 20 );
 		pIconLabel->setScaledContents(true);
-		pIconLabel->setPixmap(m_fileIconProvider.icon(QFileInfo(path)).pixmap(QSize(32, 32)));
+		pIconLabel->setPixmap(path.pixmap(QSize(32, 32)));
 		// Layout
 		QSpacerItem* pIconSpacer = new QSpacerItem(10, 5, QSizePolicy::Fixed, QSizePolicy::Minimum);
 		QHBoxLayout* pIconLayout = new QHBoxLayout(pIconWidget);
@@ -357,7 +357,7 @@ void MainWindow::onTabCloseRequested()
 	}
 }
 //
-void MainWindow::loading(const QString& /*path*/)
+void MainWindow::loading(const NavigationPath& /*path*/)
 {
 	if (ExplorerWidget* pExplorerWidget = dynamic_cast<ExplorerWidget*>(sender()))
 	{
@@ -371,18 +371,18 @@ void MainWindow::loading(const QString& /*path*/)
 	}
 }
 //
-void MainWindow::pathChanged(const QString& path, bool virtualFolder)
+void MainWindow::pathChanged(const NavigationPath& path)
 {
 	if (ExplorerWidget* pExplorerWidget = dynamic_cast<ExplorerWidget*>(sender()))
 	{
 		int tabIndex = getTabIndex(pExplorerWidget, p_ui->tabWidget);
 		if (tabIndex >= 0)
-			p_ui->tabWidget->setTabText(tabIndex, tabName(path, virtualFolder));
+			p_ui->tabWidget->setTabText(tabIndex, tabName(path));
 
 		if (QLabel* pLabel = getIconLabel(pExplorerWidget, p_ui->tabWidget))
 		{
 			pLabel->setMovie({});
-			pLabel->setPixmap(m_fileIconProvider.icon(QFileInfo(path)).pixmap(QSize(32, 32)));
+			pLabel->setPixmap(path.pixmap(QSize(32, 32)));
 		}
 	}
 }
@@ -427,18 +427,11 @@ void MainWindow::updateIcons()
 	p_menuButton->setIcon( ptr_theme->icon(Theme::Icon::Menu) );
 }
 //
-QString MainWindow::tabName(const QString& tabPath, bool virtualFolder)
+QString MainWindow::tabName(const NavigationPath& path)
 {
-	if (virtualFolder)
-	{
-		return tabPath;
-	}
+	if (path.valid())
+		return path.label();
 	else
-	{
-		QFileInfo fi(tabPath);
-		QString name = fi.isDir() ? fi.fileName() : fi.absoluteDir().dirName();
-		// '&' creates a shortcut --> TODO need to espace it using '&&' instead
-		return tabPath.isEmpty() || name.isEmpty() ? "Explorer" : name;
-	}
+		return "Explorer";
 }
 //

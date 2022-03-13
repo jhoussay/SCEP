@@ -2,6 +2,7 @@
 //
 #include <SCEP/SCEP.h>
 #include <SCEP/Theme.h>
+#include <SCEP/Navigation.h>
 //
 #include <QMainWindow>
 #include <QFileIconProvider>
@@ -48,15 +49,15 @@ protected:
 #endif //FRAMELESS
 
 protected slots:
-	void			addNewTab(QString path = {}, NewTabPosition position = NewTabPosition::Last, NewTabBehaviour behaviour = NewTabBehaviour::Current);
+	void			addNewTab(NavigationPath path = {}, NewTabPosition position = NewTabPosition::Last, NewTabBehaviour behaviour = NewTabBehaviour::Current);
 	void			closeCurrentTab();
 	void			showMenu();
 	void			about();
 
 	void			onTabCloseRequested();
 
-	void			loading(const QString& path);
-	void			pathChanged(const QString& path, bool virtualFolder);
+	void			loading(const NavigationPath& path);
+	void			pathChanged(const NavigationPath& path);
 	void			tabClosed();
 
 protected:
@@ -65,7 +66,7 @@ protected:
 private:
 	void			closeTab(int tabIndex, bool closeAppIfNoRemainingTab = true);
 	void			updateIcons();
-	static QString	tabName(const QString& tabPath, bool virtualFolder);
+	static QString	tabName(const NavigationPath& path);
 
 private:
 	Theme* ptr_theme = nullptr;
@@ -82,8 +83,6 @@ private:
 
 	QToolButton* p_addTabButton = nullptr;
 	QToolButton* p_menuButton = nullptr;
-
-	QFileIconProvider m_fileIconProvider;
 
 #ifdef FRAMELESS
 	std::optional<QPoint> m_dragPosition;

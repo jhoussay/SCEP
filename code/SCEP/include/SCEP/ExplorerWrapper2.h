@@ -2,6 +2,7 @@
 //
 #include <SCEP/Error.h>
 #include <SCEP/SCEP.h>
+#include <SCEP/Navigation.h>
 //
 #include <QObject>
 #include <QDateTime>
@@ -26,11 +27,11 @@ public:
 	~ExplorerWrapper2();
 
 public:
-	ErrorPtr				initialize(const QString& path = {});
+	ErrorPtr				initialize(const NavigationPath& path = {});
 	HWND					hwnd() const;
 	void					setVisible(bool visible);
-	ErrorPtr				setCurrentPath(const QString& path);
-	QString					currentPath() const;
+	ErrorPtr				setCurrentPath(const NavigationPath& path);
+	const NavigationPath&	currentPath() const;
 	ErrorPtr				finalize();
 
 	// IUnknown
@@ -48,21 +49,21 @@ public:
 	IFACEMETHODIMP			OnNavigationFailed(PCIDLIST_ABSOLUTE pidlFolder) override;
 
 signals:
-	void					loading(const QString& path);
-	void					pathChanged(const QString& path, bool success, bool virtualFolder);
-	void					openNewTab(const QString& path, NewTabPosition position, NewTabBehaviour behaviour);
+	void					loading(const NavigationPath& path);
+	void					pathChanged(const NavigationPath& path, bool success);
+	void					openNewTab(const NavigationPath& path, NewTabPosition position, NewTabBehaviour behaviour);
 	void					closed();
 
 private:
 	static INT_PTR CALLBACK	s_WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	INT_PTR					wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	ErrorPtr				onInitialize(const QString& path);
+	ErrorPtr				onInitialize(const NavigationPath& path);
 	ErrorPtr				getSelectedItem(REFIID riid, void **ppv);
 
 	static LRESULT CALLBACK	ShellWindowProcHook(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
 	HMENU					CreateCustomPopupMenu();
-	std::map<long, QString>	getContextMenuCustomOptions(const QString& contextMenuFocusedPath);
-	void					notifyContextMenuCustomOption(int iOption, const QString& contextMenuFocusedPath);
+	std::map<long, QString>	getContextMenuCustomOptions(const NavigationPath& contextMenuFocusedPath);
+	void					notifyContextMenuCustomOption(int iOption, const NavigationPath& contextMenuFocusedPath);
 
 private:
 	Theme*					ptr_theme = nullptr;
@@ -73,12 +74,12 @@ private:
 	IExplorerBrowser*		p_peb = nullptr;
 	bool					m_fPerformRenavigate = false;
 	DWORD					m_dwCookie = 0;
-	QString					m_currentPath;
+	NavigationPath			m_currentPath;
 
 	IShellView*				p_psv = nullptr;
 	WNDPROC					p_shellWindowProcOld = nullptr;
 	IContextMenu2*			p_contextMenu2 = nullptr;
-	QString					m_contextMenuFocusedPath = nullptr;
+	NavigationPath			m_contextMenuFocusedPath;
 
 	std::optional<QDateTime> m_middleClickDateTime;
 };
