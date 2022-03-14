@@ -718,7 +718,11 @@ NavigationPath NavigationPath::childPath(const QString& childName) const
 		}
 		else
 		{
-			return m_internalPath + "\\" + childName;
+			QString path = m_internalPath;
+			if (! path.endsWith("\\"))
+				path += "\\";
+			path += childName;
+			return path;
 		}
 	}
 	else

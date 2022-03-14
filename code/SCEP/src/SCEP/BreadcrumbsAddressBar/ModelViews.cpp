@@ -17,60 +17,31 @@
 #include <QToolButton>
 #include <QtDebug>
 //
-FilenameModel::FilenameModel(QWidget* parent, Filter filter, IconProviderFn icon_provider)
-	:	QStringListModel(parent)
+FilenameModel::FilenameModel(QWidget* parent, Filter filter)
+	:	QAbstractListModel(parent)
 {
-	// TODO QStringListModel --> QListModel with NavigationPath !
 	m_current_path = std::nullopt;
 	m_filter = filter;
-	m_icon_provider = icon_provider;
+}
+//
+int FilenameModel::rowCount(const QModelIndex& /*parent*/) const
+{
+	return (int) m_items.size();
 }
 //
 QVariant FilenameModel::data(const QModelIndex &index, int role) const
 {
-	QVariant rslt = QStringListModel::data(index, role);
-	if ( (role == Qt::DecorationRole) && m_icon_provider)
+	if ( (index.row() >= 0) && (index.row() < (int) m_items.size()) )
 	{
-		// self.setData(index, dat, role)
-		return m_icon_provider(QStringListModel::data(index, Qt::DisplayRole).toString());
+		const Item& item = m_items[index.row()];
+		if ( (role == Qt::DisplayRole) || (role == Qt::EditRole) )
+			return item.label;
+		else if (role == PathRole)
+			return item.path.internalPath();
+		else if (role == Qt::DecorationRole)
+			return item.path.icon();
 	}
-	if (role == Qt::DisplayRole)
-	{
-		return NavigationPath(rslt.toString()).label();
-	}
-	else
-	{
-		return rslt;
-	}
-}
-//
-QStringList FilenameModel::get_file_list(const QString& path) const
-{
-	QDir qdir(path);
-	QDir::Filters filters = QDir::NoDotAndDotDot /*| QDir::Hidden*/ |
-		(m_filter == Filter::Dirs ? QDir::Dirs : QDir::AllEntries);
-	QDir::SortFlags sortFlags = QDir::DirsFirst | QDir::LocaleAware;
-	QStringList names = qdir.entryList(filters, sortFlags);
-
-	// Pathes do not have a final separator ("C:\Windows"), except drives ("C:\")
-	QString separator = "\\";
-	if (path.endsWith("/") || path.endsWith("\\"))
-		separator = "";
-
-	//// Translate and sort again
-	//for (QString& name : names)
-	//{
-	//	name = getPathLabel(path + separator + name);
-	//}
-	//names.sort();
-
-	QStringList lst;
-	lst.reserve(names.size());
-	for (const QString& name : names)
-	{
-		lst.push_back(path + separator + name);
-	}
-	return lst;
+	return {};
 }
 //
 inline bool isAbsolute(const QString& prefix, const QFileInfo& fi)
@@ -92,9 +63,14 @@ void FilenameModel::setPathPrefix(QString prefix, Mode mode)
 
 	if (! isAbsolute(prefix, fi))
 	{
-		//qDebug() << "reject not absolute path " << prefix << "!";
-		setStringList({});
-		m_current_path = {};
+		if ( m_current_path.has_value() || (m_items.size() == 0) )
+		{
+			//qDebug() << "reject not absolute path " << prefix << "!";
+			beginResetModel();
+			m_current_path = std::nullopt;
+			m_items = rootItems();
+			endResetModel();
+		}
 		return;
 	}
 
@@ -120,15 +96,64 @@ void FilenameModel::setPathPrefix(QString prefix, Mode mode)
 		else
 		{
 			//qDebug() << "listing...";
-			setStringList(get_file_list(path));
+			beginResetModel();
 			m_current_path = path;
-
+			m_items = items(path);
+			endResetModel();
 		}
 	}
 	else
 	{
 		//qDebug() << "invalid directory !";
 	}
+}
+//
+bool lowerItem(const FilenameModel::Item& lhs, const FilenameModel::Item& rhs)
+{
+	return lhs.label.toLower() < rhs.label.toLower();
+}
+//
+FilenameModel::Items FilenameModel::items(const NavigationPath& path) const
+{
+	// Enumerate path entries
+	// TODO Propose hidden items ?
+	QDir dir(path.internalPath());
+	QDir::Filters filters = QDir::NoDotAndDotDot /*| QDir::Hidden*/ |
+		(m_filter == Filter::Dirs ? QDir::Dirs : QDir::AllEntries);
+	QDir::SortFlags sortFlags = QDir::DirsFirst | QDir::LocaleAware;
+	QStringList names = dir.entryList(filters, sortFlags);
+
+	// Create items
+	Items items;
+	items.reserve(names.size());
+	for (const QString& name : names)
+	{
+		NavigationPath child_path = path.childPath(name);
+		items.push_back({child_path, child_path.label()});
+	}
+
+	// Sort items per label
+	std::sort(items.begin(), items.end(), lowerItem);
+
+	return items;
+}
+//
+FilenameModel::Items FilenameModel::rootItems() const
+{
+	const NavigationPaths& drives = NavigationPath::Drives();
+	const NavigationPaths& mainFolders = NavigationPath::MainFolders();
+
+	Items items;
+	items.reserve(drives.size() + mainFolders.size());
+	for (const NavigationPath& drive : drives)
+		items.push_back({drive, drive.internalPath()}); // raw drive names
+	for (const NavigationPath& mainFolder : mainFolders)
+		items.push_back({mainFolder, mainFolder.label()});
+
+	// Sort items per label
+	std::sort(items.begin(), items.end(), lowerItem);
+
+	return items;
 }
 //
 //

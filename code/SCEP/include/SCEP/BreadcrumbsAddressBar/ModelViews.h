@@ -4,15 +4,17 @@
  */
 
 #pragma once
-
+//
+#include <SCEP/Navigation.h>
+//
 #include <QStringListModel>
 #include <QListView>
 #include <QMenu>
-
+//
 #include <optional>
-
+//
 class Theme;
-
+//
 /**
  *	@ingroup				SCEP
  *
@@ -24,7 +26,7 @@ class Theme;
  *	`icon_provider` (func, 'internal', None) - a function which gets path
  *											   and returns QIcon
  */
-class FilenameModel : public QStringListModel
+class FilenameModel : public QAbstractListModel
 {
 public:
 	enum class Filter
@@ -39,27 +41,66 @@ public:
 		Lister
 	};
 
-	using IconProviderFn = std::function<QIcon(const QString&)>;
+	/**
+	 *	@brief				Folder entry
+	 */
+	struct Item
+	{
+		NavigationPath		path;	//!< Full path
+		QString				label;	//!< Label (translated leaf of the path)
+	};
+	/**
+	 *	@brief				List of folder entries
+	 */
+	using Items = std::vector<Item>;
+
+	/**
+	 *	@brief				Role dedicated to full path
+	 */
+	static constexpr int	PathRole = Qt::UserRole;
 
 public:
-	FilenameModel(QWidget* parent, Filter filter, IconProviderFn icon_provider);
+	/**
+	 *	@brief				Constructor
+	 *	@param parent		Parent widget
+	 *	@param filter		Filter
+	 */
+	FilenameModel(QWidget* parent, Filter filter);
+
+	
+	/**
+	 *	@brief				Sets the current path prefix
+	 *	@param prefix		New path prefix
+	 *	@param mode			Mode : Completer or Lister
+	 */
+	void					setPathPrefix(QString prefix, Mode mode);
+
+	/**
+	 *	@brief				Returns the number of elements
+	 *	@param parent		Unused
+	 */
+	int						rowCount(const QModelIndex& parent = QModelIndex()) const override;
 
 	/**
 	 *	@brief				Get names/icons of files
 	 */
-	QVariant				data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+	QVariant				data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
 
+
+private:
 	/**
 	 *	@brief				List entries in `path` directory
 	 */
-	QStringList				get_file_list(const QString& path) const;
-
-	void					setPathPrefix(QString prefix, Mode mode);
+	Items					items(const NavigationPath& path) const;
+	/**
+	 *	@brief				List root entries (drives and known folders)
+	 */
+	Items					rootItems() const;
 
 private:
-	std::optional<QString>	m_current_path;
 	Filter					m_filter = Filter::None;
-	IconProviderFn			m_icon_provider;
+	std::optional<QString>	m_current_path;
+	Items					m_items;
 };
 //
 class MenuListView;

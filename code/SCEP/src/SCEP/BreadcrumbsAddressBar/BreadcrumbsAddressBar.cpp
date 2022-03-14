@@ -265,9 +265,7 @@ BreadcrumbsAddressBar::BreadcrumbsAddressBar(Theme* ptrTheme, QWidget* parent)
 
 	QHBoxLayout* pLayout = new QHBoxLayout(this);
 
-	FilenameModel::IconProviderFn iconProvider = [this](const QString& path) -> QIcon { return NavigationPath(path).icon(); };
-
-	p_fs_model = new FilenameModel(this, FilenameModel::Filter::Dirs, iconProvider);
+	p_fs_model = new FilenameModel(this, FilenameModel::Filter::Dirs);
 
 	QPalette pal = palette();
 	pal.setColor(QPalette::Window, pal.color(QPalette::Base));
@@ -503,8 +501,7 @@ void BreadcrumbsAddressBar::crumb_mouse_move(QMouseEvent* /*event*/)
 //
 void BreadcrumbsAddressBar::crumb_menuitem_clicked(const QModelIndex& index)
 {
-	// TODO direct access to model (when it handles NavigationPath)
-	requestPathChange(NavigationPath(index.data(Qt::EditRole).toString()));
+	requestPathChange(NavigationPath(index.data(FilenameModel::PathRole).toString()));
 }
 //
 void BreadcrumbsAddressBar::crumb_menu_show()
