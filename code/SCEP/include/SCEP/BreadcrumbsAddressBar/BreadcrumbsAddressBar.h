@@ -90,11 +90,6 @@ protected:
 	void					init_rootmenu_places(QMenu* menu);
 
 	/**
-	 *	@brief				List (name, path) locations in Network Shortcuts folder on Windows
-	 */
-	static std::vector<NavigationPath> list_network_locations();
-
-	/**
 	 *	@brief				Init or rebuild device actions in menu
 	 */
 	void					update_rootmenu_devices();

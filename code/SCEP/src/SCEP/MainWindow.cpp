@@ -6,8 +6,6 @@
 #include <QTabBar>
 #include <QToolButton>
 #include <QMenu>
-#include <QFileInfo>
-#include <QDir>
 #include <QStandardPaths>
 #include <QLabel>
 #include <QMovie>

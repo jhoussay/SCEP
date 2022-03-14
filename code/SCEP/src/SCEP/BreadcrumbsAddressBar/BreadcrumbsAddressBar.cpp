@@ -20,12 +20,7 @@
 #include <QLabel>
 #include <QCompleter>
 #include <QTimer>
-#include <QStandardPaths>
-#include <QDir>
-#include <QStorageInfo>
-#include <QFileDialog>
 #include <QKeyEvent>
-#include <QLayoutItem>
 #include <QMovie>
 #include <QtDebug>
 //
@@ -418,79 +413,35 @@ void BreadcrumbsAddressBar::_hidden_crumbs_menu_show()
 void BreadcrumbsAddressBar::init_rootmenu_places(QMenu* menu)
 {
 	menu->addSeparator();
-	
-	QString uname;
-	QByteArray user = qgetenv("USER");
-	QByteArray username = qgetenv("USERNAME");
-	if (! user.isEmpty())
-		uname = user;
-	else if (! username.isEmpty())
-		uname = username;
-	else
-		uname = tr("Home");
 
-	std::vector<std::pair<QString, NavigationPath>> location = 
+	for (const NavigationPath& path : NavigationPath::MainFolders())
 	{
-		{ "Desktop", NavigationPath(QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)) },
-		{ uname, NavigationPath(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)) },
-		{ "Documents", NavigationPath(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)) },
-		{ "Downloads", NavigationPath(QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)) }
-	};
-
-	for (auto [name, path] : location)
-	{
-		name = path.label();
-		QAction* action = menu->addAction(path.icon(), name);
+		QAction* action = menu->addAction(path.icon(), path.label());
 		set_path_property(action, path);
 		connect(action, SIGNAL(triggered(bool)), this, SLOT(requestSenderPathChange()));
 	}
 }
 //
-std::vector<NavigationPath> BreadcrumbsAddressBar::list_network_locations()
-{
-	std::vector<NavigationPath> rslt;
-
-	QStandardPaths::StandardLocation HOME = QStandardPaths::HomeLocation;
-	QString user_folder = QStandardPaths::writableLocation(HOME);
-	QString network_shortcuts = user_folder + "/AppData/Roaming/Microsoft/Windows/Network Shortcuts";
-	for (QString i : QDir(network_shortcuts).entryList(QDir::Dirs | QDir::NoDotAndDotDot))
-	{
-		QFileInfo link(i + "/target.lnk");
-		if (! link.exists())
-			continue;
-		QString path = link.symLinkTarget();
-		if (! path.isEmpty()) // `symLinkTarget` doesn't read e.g. FTP links
-			rslt.push_back(NavigationPath(path));
-	}
-
-	return rslt;
-}
-//
 void BreadcrumbsAddressBar::update_rootmenu_devices()
 {
 	QMenu* menu = p_btn_root_crumb->menu();
+
+	// Clear menu
 	for (QAction* action : m_actions_devices)
 		menu->removeAction(action);
 	m_actions_devices = {menu->addSeparator()};
-	for (QStorageInfo i : QStorageInfo::mountedVolumes()) // QDir.drives():
+
+	// Drives
+	for (const NavigationPath& path : NavigationPath::Drives())
 	{
-		QString path = i.rootPath();
-		NavigationPath navPath(path);
-		QString label = i.displayName();
-		if (label == path) // TODO JHO win32
-			label = navPath.label();
-		QString trimmedPath = path;
-		if (trimmedPath.endsWith("/") || trimmedPath.endsWith("\\"))
-			trimmedPath = trimmedPath.left(trimmedPath.size()-1);
-		QString caption = QString("%1 (%2)").arg(label).arg(trimmedPath);
-		QAction* action = menu->addAction(navPath.icon(), caption);
-		set_path_property(action, navPath);
+		QAction* action = menu->addAction(path.icon(), path.label());
+		set_path_property(action, path);
 		connect(action, SIGNAL(triggered(bool)), this, SLOT(requestSenderPathChange()));
 		m_actions_devices.push_back(action);
 	}
-	// TODO JHO win32
+
 	// Network locations
-	for (NavigationPath path : list_network_locations())
+	for (const NavigationPath& path : NavigationPath::NetworkLocations())
 	{
 		QAction* action = menu->addAction(path.icon(), path.label());
 		set_path_property(action, path);
@@ -594,7 +545,7 @@ bool BreadcrumbsAddressBar::set_path(const NavigationPath& path)
 
 	_clear_crumbs();
 	m_path = path;
-	p_line_address->setText(path.displayPath(false));
+	p_line_address->setText(path.displayPath());
 		
 	// Insert crumbs
 	NavigationPath pathTmp = m_path;
@@ -641,7 +592,7 @@ void BreadcrumbsAddressBar::requestSenderPathChange()
 void BreadcrumbsAddressBar::_cancel_edit()
 {
 	qDebug() << "_cancel_edit";
-	p_line_address->setText(m_path.displayPath(false)); // revert path
+	p_line_address->setText(m_path.displayPath()); // revert path
 	show_address_field(false); // switch back to breadcrumbs view
 }
 //

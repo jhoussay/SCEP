@@ -4,8 +4,6 @@
 //
 #include <linkollector-win/dark_mode.h>
 //
-#include <QUrl>
-#include <QFileInfo>
 #include <QTimer>
 #include <QtDebug>
 //
@@ -141,9 +139,6 @@ void ExplorerWrapper2::setVisible(bool visible)
 ErrorPtr ExplorerWrapper2::setCurrentPath(const NavigationPath& path)
 {
 	CHECK(p_peb, "ExplorerWrapper2::setCurrentPath() : No current instance.");
-
-//	QFileInfo pathInfo(path);
-//	CHECK(pathInfo.exists() && pathInfo.isDir(), "Invalid path");
 
 	IShellItem* psi = CreateShellItem(path.internalPath());
 	if (psi)
@@ -473,11 +468,10 @@ LRESULT CALLBACK ExplorerWrapper2::ShellWindowProcHook(HWND hwnd, UINT uMsg, WPA
 							if (SUCCEEDED(hr))
 							{
 								// Path of the clicked item
-								QString path = pThis->currentPath().internalPath() + "/" + QString::fromWCharArray(pszName);
+								NavigationPath path = pThis->currentPath().childPath(QString::fromWCharArray(pszName));
 		
 								// Ask for a new tab if the clicked item corresponds to an existing folder
-								QFileInfo fi(path);
-								if (fi.exists() && fi.isDir())
+								if (path.isExistingDirectory())
 								{
 									emit pThis->openNewTab(NavigationPath(path), NewTabPosition::AfterCurrent, NewTabBehaviour::None);
 								}

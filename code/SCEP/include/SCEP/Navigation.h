@@ -11,17 +11,42 @@
 //
 class NavigationPathUtils;
 //
+class NavigationPath;
+//
 /**
- *	@ingroup		SCEP
- *	@brief			Structure representing a path
+ *	@ingroup				SCEP
+ *	@brief					A vector of path
+ */
+using NavigationPaths = std::vector<NavigationPath>;
+//
+/**
+ *	@ingroup				SCEP
+ *	@brief					Class representing a path which can be a file system path (real path) or a Windows virtual folder
  */
 class NavigationPath
 {
 public:
 	/**
-	 *	@brief		Indicates whether the given filesystem path is absolute or not
+	 *	@brief				Indicates whether the given filesystem path is absolute or not
 	 */
-	static bool		IsAbsolute(const QString& path);
+	static bool				IsAbsolute(const QString& path);
+
+	/**
+	 *	@brief				Returns the drives
+	 */
+	static const NavigationPaths&	Drives();
+	/**
+	 *	@brief				Returns the network locations
+	 */
+	static const NavigationPaths&	NetworkLocations();
+	/**
+	 *	@brief				Returns the known folders
+	 */
+	static const NavigationPaths&	KnownFolders();
+	/**
+	 *	@brief				Returns the main folders (desktop, home...) among the known folders
+	 */
+	static const NavigationPaths&	MainFolders();
 
 public:
 	/**
@@ -59,10 +84,10 @@ public:
 	 *	@brief		Returns the user display path
 	 *
 	 *	Two cases :
-	 *	- real folder : returns the path : "translated" or internel (cf. @param translate)
+	 *	- real folder : returns the path
 	 *	- virtual folder : returns the display name, such as "Network" (or "Réseau" in French)
 	 */
-	QString			displayPath(bool translate = true) const;
+	QString			displayPath() const;
 	/**
 	 *	@ingroup	SCEP
 	 *	@brief		Returns the "translated" leaf of the path
@@ -75,7 +100,6 @@ public:
 	 */
 	QString			label() const;
 
-	
 	/**
 	 *	@brief		Indicates whether the path is empty or not
 	 */
@@ -125,6 +149,12 @@ public:
 	 *	@param size	Requested size
 	 */
 	QPixmap			pixmap(const QSize size = {32, 23}) const;
+
+	/**
+	 *	@brief		Returns the path to a file or a folder contained in the current path (considered as a folder)
+	 *	@param childName Name of the file or folder
+	 */
+	NavigationPath	childPath(const QString& childName) const;
 
 	/**
 	 *	@brief		Equality operator
@@ -188,7 +218,7 @@ public:
 	 *	@param history	Navigation history
 	 *	@param index	Current index in navigation history
 	 */
-	NavigationHistory(const std::vector<NavigationPath>& history = {}, int index = -1);
+	NavigationHistory(const NavigationPaths& history = {}, int index = -1);
 
 	/**
 	 *	@brief			Indicates whether the navigation history is valid or not
@@ -220,7 +250,7 @@ public:
 	void				navigateTo(const NavigationPath& path);
 
 private:
-	std::vector<NavigationPath>		m_history;
-	int								m_index = -1;
+	NavigationPaths		m_history;
+	int					m_index = -1;
 };
 
