@@ -48,7 +48,7 @@ TODO
 - [x] Handle known folders icons in address bar and tabs
 - [ ] Buffering icon remains on navigation failed
 - [x] Full support for translated paths
-- [ ] Double error message on navigation failure
+- [x] Double error message on navigation failure
 - [x] Replace "/" by "\\" when pasting on address bar
 - [x] Intermitent missing icon bug for virtual folders
 

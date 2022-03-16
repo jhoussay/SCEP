@@ -1,4 +1,4 @@
-﻿#include <SCEP/ExplorerWidget2.h>
+#include <SCEP/ExplorerWidget2.h>
 #include <SCEP/ExplorerWrapper2.h>
 #include <SCEP/BreadcrumbsAddressBar/BreadcrumbsAddressBar.h>
 #include <SCEP/Theme.h>
@@ -115,7 +115,8 @@ void ExplorerWidget2::setCurrentPath(const NavigationPath& path)
 			m_onNavigation = true;
 			if (ErrorPtr pError = p_wrapper->setCurrentPath(path) )
 			{
-				onPathChanged(path, false);
+				displayError(pError);
+				//onPathChanged(path, false);
 			}
 		}
 	}
