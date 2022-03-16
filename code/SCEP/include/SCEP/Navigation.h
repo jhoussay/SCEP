@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 //
 #include <QString>
 #include <QIcon>
@@ -59,19 +59,30 @@ public:
 	/**
 	 *	@brief		Create navigation path from string description
 	 *	@param path	Path
+	 *	@param mayContainTranslatedLabels Indicates whether the path can contain translated labels (for real filesystem path only)
 	 *
 	 *	The algorithm is :
-	 *	- We check whether the path corresponds to a known virtual folder (we both check the GUID style and the label style).
-	 *	- If it is a virtual folder, we keep the GUID style path as internal path and we are done.
-	 *	- Else, we will try to consider the path as a filesystem path (non virtual).
+	 *	- If the path corresponds to an absolute path :
+	 *		- If the path can contain translated labels, we try to get the real win32 path.
+	 *		  If it fails, the path is returned "as is"
+	 *		- Else, the path is returned "as is".
+	 *	- Else, we try to determine if the path corresponds to a known virtual folder (we both check the GUID style and the label style) :
+	 *		- If a known folder is found, we keep the GUID style path as internal path
+	 *		- Else, the path is returned "as is" : it is relative and thus invalid..
 	 * 
-	 *	Note : on non virtual path, no existence or readability check is performed.
+	 *	Note : on non virtual path, no existence or readability check is performed (except if mayContainTranslatedLabels is set to true).
 	 *
 	 *	@see		isExistingDirectory(), isReadableDirectory()
 	 */
-	NavigationPath(QString path = QString());
+	NavigationPath(QString path = QString(), bool mayContainTranslatedLabels = false);
 
 public:
+	/**
+	 *	@brief		Returns the input path, exactly as it was set in QString-based contructor.
+	 * 
+	 *	For PIDL contructor, returns the internal path
+	 */
+	const QString&	inputPath() const;
 	/**
 	 *	@brief		Returns the full win32 path
 	 *
@@ -166,7 +177,8 @@ public:
 	bool			operator !=(const NavigationPath& other) const;
 
 private:
-	QString			m_internalPath;				//!< Internal path :
+	QString			m_inputPath;				//!< Input path : may contain "/", "." or ".."...
+	QString			m_internalPath;				//!< Internal path (after some processing)
 	bool			m_virtualFolder = false;	//!< Virtual folder ?
 
 	static NavigationPathUtils* p_utils;		//!< Utils

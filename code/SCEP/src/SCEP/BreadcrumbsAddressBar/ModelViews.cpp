@@ -17,11 +17,11 @@
 #include <QToolButton>
 #include <QtDebug>
 //
-FilenameModel::FilenameModel(QWidget* parent, Filter filter)
+FilenameModel::FilenameModel(QWidget* parent)
 	:	QAbstractListModel(parent)
 {
-	m_current_path = std::nullopt;
-	m_filter = filter;
+	m_currentPath = {};
+	m_fullPath = {};
 }
 //
 int FilenameModel::rowCount(const QModelIndex& /*parent*/) const
@@ -34,62 +34,64 @@ QVariant FilenameModel::data(const QModelIndex &index, int role) const
 	if ( (index.row() >= 0) && (index.row() < (int) m_items.size()) )
 	{
 		const Item& item = m_items[index.row()];
-		if ( (role == Qt::DisplayRole) || (role == Qt::EditRole) )
+		if (role == Qt::DisplayRole)
 			return item.label;
+		else if (role == Qt::EditRole)
+		{
+			QString rslt;
+			if (! m_currentPath.empty())
+			{
+				// Completer : We need to return the input path to match what the
+				// user typed in the address line edit
+				rslt = m_currentPath.inputPath();
+				if (! rslt.endsWith("\\"))
+					rslt += "\\";
+			}
+			rslt += item.label;
+			return rslt;
+		}
 		else if (role == PathRole)
 			return item.path.internalPath();
 		else if (role == Qt::DecorationRole)
 			return item.path.icon();
+		else if (role == Qt::FontRole)
+		{
+			if (! m_fullPath.empty())
+			{
+				QFont font;
+				if (m_fullPath.internalPath().startsWith(item.path.internalPath()))
+				{
+					font.setBold(true);
+				}
+				return font;
+			}
+		}
 	}
 	return {};
 }
 //
-inline bool isAbsolute(const QString& prefix, const QFileInfo& fi)
-{
-	// QFileInfo::isAbsolute returns true for some invalid pathes
-	return (prefix.contains("/") || prefix.contains("\\")) && fi.isAbsolute();
-}
-//
-inline bool dirExists(const QString& prefix, const QFileInfo& fi)
-{
-	return (! prefix.isEmpty()) && fi.exists() && fi.isDir();
-}
-//
-void FilenameModel::setPathPrefix(QString prefix, Mode mode)
+void FilenameModel::setCurrentPath(NavigationPath currentPath, const NavigationPath& fullPath, Mode mode)
 {
 	//qDebug() << "FilenameModel::setPathPrefix -> " << prefix;
 
-	QFileInfo fi(prefix);
-
-	if (! isAbsolute(prefix, fi))
+	if (! NavigationPath::IsAbsolute(currentPath.internalPath()))
 	{
-		if ( m_current_path.has_value() || (m_items.size() == 0) )
+		if ( (! m_currentPath.empty()) || (m_items.size() == 0) )
 		{
 			//qDebug() << "reject not absolute path " << prefix << "!";
 			beginResetModel();
-			m_current_path = std::nullopt;
+			m_currentPath = {};
+			m_fullPath = {};
 			m_items = rootItems();
 			endResetModel();
 		}
 		return;
 	}
-
-	bool missing = ! dirExists(prefix, fi);
-	bool completerException = (mode == Mode::Completer) && (! prefix.endsWith("/")) && (! prefix.endsWith("\\") );
-	if ( missing || completerException )
-	{
-		//qDebug() << "trying parent directory..." << prefix;
-		// maybe trying to type something ?
-		// so we should consider the parent directory
-		prefix = fi.absolutePath();
-		fi = QFileInfo(prefix);
-	}
 	
-	if (dirExists(prefix, fi))
+	if (currentPath.isExistingDirectory())
 	{
-		QString path = fi.absoluteFilePath().replace("/", "\\");
 		//qDebug() << "path = " << path;
-		if (path == m_current_path.value_or(""))
+		if (currentPath == m_currentPath)
 		{
 			//qDebug() << "already listed !";
 		}
@@ -97,8 +99,9 @@ void FilenameModel::setPathPrefix(QString prefix, Mode mode)
 		{
 			//qDebug() << "listing...";
 			beginResetModel();
-			m_current_path = path;
-			m_items = items(path);
+			m_currentPath = currentPath;
+			m_fullPath = fullPath;
+			m_items = GetItems(m_currentPath, mode);
 			endResetModel();
 		}
 	}
@@ -113,13 +116,15 @@ bool lowerItem(const FilenameModel::Item& lhs, const FilenameModel::Item& rhs)
 	return lhs.label.toLower() < rhs.label.toLower();
 }
 //
-FilenameModel::Items FilenameModel::items(const NavigationPath& path) const
+FilenameModel::Items FilenameModel::GetItems(const NavigationPath& path, Mode mode)
 {
+	bool dirsOnly = (mode == Mode::Lister);
+
 	// Enumerate path entries
 	// TODO Propose hidden items ?
-	QDir dir(path.internalPath());
+	QDir dir(path.internalPath() + "\\");
 	QDir::Filters filters = QDir::NoDotAndDotDot /*| QDir::Hidden*/ |
-		(m_filter == Filter::Dirs ? QDir::Dirs : QDir::AllEntries);
+		(dirsOnly ? QDir::Dirs : QDir::AllEntries);
 	QDir::SortFlags sortFlags = QDir::DirsFirst | QDir::LocaleAware;
 	QStringList names = dir.entryList(filters, sortFlags);
 

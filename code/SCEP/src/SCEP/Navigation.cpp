@@ -1,4 +1,4 @@
-﻿#include <SCEP/Navigation.h>
+#include <SCEP/Navigation.h>
 #include <SCEP/Error.h>
 //
 #include <QFileInfo>
@@ -28,6 +28,7 @@ struct KnownFolder
 //
 enum class MainFolderId
 {
+	MyComputer,	//!< My Computer
 	OneDrive,	//!< OneDrive
 	Desktop,	//!< Desktop
 	Home,		//!< Home
@@ -60,6 +61,7 @@ private:
 	//< Main folders
 	MainFolders					m_mainFolders =
 	{
+		{ MainFolderId::MyComputer,	"MyComputerFolder",		std::nullopt },
 		{ MainFolderId::OneDrive,	"OneDrive",				std::nullopt },
 		{ MainFolderId::Desktop,	"ThisPCDesktopFolder",	std::nullopt },
 		{ MainFolderId::Home,		"UsersFilesFolder",		std::nullopt },
@@ -412,6 +414,7 @@ NavigationPath::NavigationPath(PCIDLIST_ABSOLUTE pidlFolder)
 	if (SUCCEEDED(hr))
 	{
 		m_virtualFolder = false;
+		m_inputPath = QString::fromWCharArray(pszName);
 		m_internalPath = QString::fromWCharArray(pszName);
 		CoTaskMemFree(pszName);
 	}
@@ -429,6 +432,7 @@ NavigationPath::NavigationPath(PCIDLIST_ABSOLUTE pidlFolder)
 				if (knownFolder.has_value()) // Found it ?
 				{
 					m_internalPath = knownFolder.value().internalName;
+					m_inputPath = knownFolder.value().internalName;
 					m_virtualFolder = knownFolder.value().virtualFolder;
 					return;
 				}
@@ -449,8 +453,9 @@ NavigationPath::NavigationPath(PCIDLIST_ABSOLUTE pidlFolder)
 	}
 }
 //
-NavigationPath::NavigationPath(QString path)
+NavigationPath::NavigationPath(QString path, bool mayContainTranslatedLabels)
 {
+	m_inputPath = path;
 	path.replace("/", "\\");
 
 	if (! path.isEmpty())
@@ -458,8 +463,88 @@ NavigationPath::NavigationPath(QString path)
 		// Absolute path ?
 		if (IsAbsolute(path))
 		{
-			m_internalPath = path;
 			m_virtualFolder = false;
+			path = QFileInfo(path).absoluteFilePath().replace("/", "\\");
+
+			if (mayContainTranslatedLabels)
+			{
+				QStringList list = path.split("\\", Qt::SkipEmptyParts);
+				assert(list.size() > 0);
+
+				// First : can we identify a drive ?
+				const QString driveStr = list[0];
+				std::optional<NavigationPath> drive;
+				for (const NavigationPath& drive_tmp : Drives())
+				{
+					if (driveStr.toLower() + "\\" == drive_tmp.internalPath().toLower())
+					{
+						drive = drive_tmp;
+						break;
+					}
+				}
+
+				// Set up the loop
+				m_internalPath = driveStr;
+				bool ok = drive.has_value();
+
+				// Iterate over items
+				for (int i = 1; i < list.size(); i++)
+				{
+					const QString& item = list[i];
+
+					// Still ok ?
+					if (ok)
+					{
+						// Does the path exist ?
+						QString firstTry = m_internalPath + "\\" + item;
+						if (QFileInfo(firstTry).exists())
+						{
+							// If so, it's ok
+							m_internalPath += "\\" + item;
+						}
+						else
+						{
+							// Else, try all the files and folders at that level and compare to their labels
+							bool found = false;
+							QDir parentDir(m_internalPath + "\\");
+							QStringList children = parentDir.entryList(QDir::AllEntries | QDir::NoDotAndDotDot);
+							for (const QString& child : children)
+							{
+								NavigationPath childPath(m_internalPath + "\\" + child);
+								if (childPath.label().toLower() == item.toLower())
+								{
+									found = true;
+									m_internalPath = childPath.internalPath();
+									break;
+								}
+							}
+							
+							// Didn't find it...
+							if (! found)
+							{
+								ok = false;
+								m_internalPath += "\\" + item;
+							}
+						}
+					}
+					// KO : just proceed
+					else
+					{
+						m_internalPath += "\\" + item;
+					}
+				}
+			}
+			// No translated path, keep "as is"
+			else
+			{
+				m_internalPath = path;
+			}
+
+			// Take care of drives
+			if ( (m_internalPath.size() == 2) && (m_internalPath.unicode()[0].isLetter()) && (m_internalPath.unicode()[1] == ':') )
+				m_internalPath += "\\";
+
+			// Done for absolute path
 			return;
 		}
 
@@ -483,6 +568,11 @@ NavigationPath::NavigationPath(QString path)
 		m_internalPath = path;
 		m_virtualFolder = false;
 	}
+}
+//
+const QString& NavigationPath::inputPath() const
+{
+	return m_inputPath;
 }
 //
 const QString& NavigationPath::internalPath() const
@@ -733,6 +823,7 @@ NavigationPath NavigationPath::childPath(const QString& childName) const
 //
 bool NavigationPath::operator ==(const NavigationPath& other) const
 {
+	// TODO Normalize paths !!!!
 	return (m_internalPath == other.m_internalPath) && (m_virtualFolder == other.m_virtualFolder);
 }
 //

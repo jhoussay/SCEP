@@ -29,12 +29,6 @@ class Theme;
 class FilenameModel : public QAbstractListModel
 {
 public:
-	enum class Filter
-	{
-		None,
-		Dirs
-	};
-
 	enum class Mode
 	{
 		Completer,
@@ -63,17 +57,17 @@ public:
 	/**
 	 *	@brief				Constructor
 	 *	@param parent		Parent widget
-	 *	@param filter		Filter
 	 */
-	FilenameModel(QWidget* parent, Filter filter);
+	FilenameModel(QWidget* parent);
 
 	
 	/**
 	 *	@brief				Sets the current path prefix
-	 *	@param prefix		New path prefix
+	 *	@param currentPath	Current path
+	 *	@param fullPath		Full path
 	 *	@param mode			Mode : Completer or Lister
 	 */
-	void					setPathPrefix(QString prefix, Mode mode);
+	void					setCurrentPath(NavigationPath currentPath, const NavigationPath& fullPath, Mode mode);
 
 	/**
 	 *	@brief				Returns the number of elements
@@ -91,15 +85,15 @@ private:
 	/**
 	 *	@brief				List entries in `path` directory
 	 */
-	Items					items(const NavigationPath& path) const;
+	static Items			GetItems(const NavigationPath& path, Mode mode);
 	/**
 	 *	@brief				List root entries (drives and known folders)
 	 */
 	Items					rootItems() const;
 
 private:
-	Filter					m_filter = Filter::None;
-	std::optional<QString>	m_current_path;
+	NavigationPath			m_currentPath;
+	NavigationPath			m_fullPath;
 	Items					m_items;
 };
 //

@@ -1,4 +1,4 @@
-﻿/**
+/**
  *	Ported to C++ and adapted from Andrey Makarov's breadcrumbsaddressbar, 2019, MIT license
  *	https://github.com/Winand/breadcrumbsaddressbar
  */
@@ -70,10 +70,6 @@ public:
 	BreadcrumbsAddressBar(Theme* ptrTheme, QWidget* parent = nullptr);
 
 protected:
-	/**
-	 *	@brief				Init QCompleter to work with filesystem
-	 */
-	QCompleter*				init_completer(QLineEdit* edit_widget, FilenameModel* model);
 
 	void					set_line_address_closeOnFocusOut(bool closeOnFocusOut);
 
@@ -109,6 +105,11 @@ protected:
 	 *	@brief				SLOT: fill subdirectory list on menu open
 	 */
 	void					crumb_menu_show();
+
+	/**
+	 *	@brief				Slot called when the user changes the text in the address line edit
+	 */
+	void					onAddressChanged(const QString& path);
 
 public:
 	/**

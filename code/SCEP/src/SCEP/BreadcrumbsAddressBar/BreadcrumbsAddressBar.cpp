@@ -22,6 +22,9 @@
 #include <QTimer>
 #include <QKeyEvent>
 #include <QMovie>
+#include <QDesktopServices>
+#include <QClipboard>
+#include <QMimeData>
 #include <QtDebug>
 //
 #include <windows.h>
@@ -144,8 +147,6 @@ public:
 		,	ptr_breadcrumbsAddressBar(ptrBreadcrumbsAddressBar)
 	{}
 
-	// TODO Implement canInsertFromMimeData() and insertFromMimeData() to replace every "/" by "\\" when pasting
-
 protected:
 	void keyPressEvent(QKeyEvent *event) override
 	{
@@ -160,14 +161,29 @@ protected:
 				// We need to handle this key press to close QCompleter popup
 				QLineEdit::keyPressEvent(event);
 
-				qDebug() << "keyPressEvent : Enter/Return -> " << event->key();
-				ptr_breadcrumbsAddressBar->requestPathChange(text());
+				ptr_breadcrumbsAddressBar->requestPathChange(NavigationPath(text(), true));
 			}
 			else if (event->key() == Qt::Key_Slash)
 			{
 				// Replace "/" by "\\" on the fly
 				QKeyEvent keyEvent(event->type(), Qt::Key_Backslash, event->modifiers(), "\\", event->isAutoRepeat(), event->count());
 				QLineEdit::keyPressEvent(&keyEvent);
+			}
+			else if (event->matches(QKeySequence::Paste))
+			{
+				// Tweak the clipboard content to replace "/" by "\\"
+				// TODO Find a more elegant solution without modifying the clipboard content
+				// but able to handle any cursor position and text selection.
+				QClipboard* pClipboard = QGuiApplication::clipboard();
+				QString txt = pClipboard->text();
+				if (txt.contains("/"))
+				{
+					txt.replace("/", "\\");
+					pClipboard->setText(txt);
+				}
+
+				// Proceed the paste
+				QLineEdit::keyPressEvent(event);
 			}
 			else
 			{
@@ -265,7 +281,7 @@ BreadcrumbsAddressBar::BreadcrumbsAddressBar(Theme* ptrTheme, QWidget* parent)
 
 	QHBoxLayout* pLayout = new QHBoxLayout(this);
 
-	p_fs_model = new FilenameModel(this, FilenameModel::Filter::Dirs);
+	p_fs_model = new FilenameModel(this);
 
 	QPalette pal = palette();
 	pal.setColor(QPalette::Window, pal.color(QPalette::Base));
@@ -287,8 +303,18 @@ BreadcrumbsAddressBar::BreadcrumbsAddressBar(Theme* ptrTheme, QWidget* parent)
 	p_line_address->hide();
 	pLayout->addWidget(p_line_address);
 	// Add QCompleter to address line
-	QCompleter* pCompleter = init_completer(p_line_address, p_fs_model);
-	connect(pCompleter, qOverload<const QString&>(&QCompleter::activated), this, &BreadcrumbsAddressBar::requestSenderPathChange);
+	QCompleter* completer = new QCompleter(this);
+	completer->setCaseSensitivity(Qt::CaseInsensitive);
+	completer->setModel(p_fs_model);
+	// Optimize performance https://stackoverflow.com/a/33454284/1119602
+	if (QListView* popup = dynamic_cast<QListView*>(completer->popup()))
+	{
+		popup->setUniformItemSizes(true);
+		popup->setLayoutMode(QListView::Batched);
+	}
+	p_line_address->setCompleter(completer);
+	connect(p_line_address, &QLineEdit::textEdited, this, &BreadcrumbsAddressBar::onAddressChanged);
+	connect(completer, qOverload<const QString&>(&QCompleter::activated), this, &BreadcrumbsAddressBar::requestSenderPathChange);
 
 	// Container for `btn_crumbs_hidden`, `crumbs_panel`, `switch_space`
 	p_crumbs_container = new QWidget(this);
@@ -339,22 +365,6 @@ BreadcrumbsAddressBar::BreadcrumbsAddressBar(Theme* ptrTheme, QWidget* parent)
 	m_ignore_resize = false;
 	m_path = {};
 	set_path(m_path);
-}
-//
-QCompleter* BreadcrumbsAddressBar::init_completer(QLineEdit* edit_widget, FilenameModel* model)
-{
-	QCompleter* completer = new QCompleter(this);
-	completer->setCaseSensitivity(Qt::CaseInsensitive);
-	completer->setModel(model);
-	// Optimize performance https://stackoverflow.com/a/33454284/1119602
-	if (QListView* popup = dynamic_cast<QListView*>(completer->popup()))
-	{
-		popup->setUniformItemSizes(true);
-		popup->setLayoutMode(QListView::Batched);
-	}
-	edit_widget->setCompleter(completer);
-	connect(edit_widget, &QLineEdit::textEdited, [=](const QString& text) { model->setPathPrefix(text, FilenameModel::Mode::Completer); });
-	return completer;
 }
 //
 void BreadcrumbsAddressBar::set_line_address_closeOnFocusOut(bool closeOnFocusOut)
@@ -504,12 +514,22 @@ void BreadcrumbsAddressBar::crumb_menuitem_clicked(const QModelIndex& index)
 	requestPathChange(NavigationPath(index.data(FilenameModel::PathRole).toString()));
 }
 //
+void BreadcrumbsAddressBar::onAddressChanged(const QString& path)
+{
+	// Remove leaf
+	int index = path.lastIndexOf("\\");
+	QString prefix = (index == -1) ? path : path.left(index) + "\\";
+
+	qDebug() << "BreadcrumbsAddressBar::onAddressChanged" << path << prefix;
+
+	p_fs_model->setCurrentPath(NavigationPath(prefix, true), {}, FilenameModel::Mode::Completer);
+}
+//
 void BreadcrumbsAddressBar::crumb_menu_show()
 {
 	if (MenuListView* menu = dynamic_cast<MenuListView*>(sender()))
 	{
-		// TODO set NavigationPath (when it handles NavigationPath)
-		p_fs_model->setPathPrefix(get_path_property(menu->parent()).internalPath(), FilenameModel::Mode::Lister);
+		p_fs_model->setCurrentPath(get_path_property(menu->parent()), m_path, FilenameModel::Mode::Lister);
 		menu->clear_selection(); // clear currentIndex after applying new model
 		p_mouse_pos_timer->start(100);
 	}
@@ -573,7 +593,17 @@ void BreadcrumbsAddressBar::set_loading(const NavigationPath& path)
 //
 void BreadcrumbsAddressBar::requestPathChange(const NavigationPath& path)
 {
-	emit path_requested(path);
+	QFileInfo fi(path.internalPath());
+	// If the path is an existing path, we open it
+	if (fi.exists() && fi.isFile())
+	{
+		QDesktopServices::openUrl(QUrl::fromLocalFile(fi.absoluteFilePath()));
+	}
+	// Else we try to navigate to the path
+	else
+	{
+		emit path_requested(path);
+	}
 }
 //
 void BreadcrumbsAddressBar::requestSenderPathChange()
@@ -589,8 +619,13 @@ void BreadcrumbsAddressBar::requestSenderPathChange()
 void BreadcrumbsAddressBar::_cancel_edit()
 {
 	qDebug() << "_cancel_edit";
-	p_line_address->setText(m_path.displayPath()); // revert path
-	show_address_field(false); // switch back to breadcrumbs view
+
+	// revert path
+	p_line_address->setText(m_path.displayPath());
+	p_fs_model->setCurrentPath(m_path, {}, FilenameModel::Mode::Completer);
+
+	// switch back to breadcrumbs view
+	show_address_field(false);
 }
 //
 const NavigationPath& BreadcrumbsAddressBar::path() const

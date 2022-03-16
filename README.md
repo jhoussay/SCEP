@@ -40,15 +40,16 @@ TODO
 - [x] Open new tab with a dedicated option in the context menu displayed for folders
 - [ ] Detect media added or removed
 - [ ] Handle shortcuts in both windows (Qt and win32) : CTRL + T, CTRL+W, CTRL+L...
-- [ ] Breadcrumb bar : highlight current folder (with bold font) in menus
+- [x] Breadcrumb bar : highlight current folder (with bold font) in menus
 - [ ] Enhance light palette to match the windows palette
 - [ ] Restore window geometry at start
 - [ ] Settings : show hidden files, single instance, theme color (dark, light, auto -> will need restart to take effect)
-- [ ] QCompleter : propose drives and known folders for not absolutes pathes
-
-### Misc
-
-- [ ] Handle known folders icons in address bar and tabs
+- [x] QCompleter : propose drives and known folders for non absolutes pathes
+- [x] Handle known folders icons in address bar and tabs
+- [ ] Buffering icon remains on navigation failed
+- [x] Full support for translated paths
+- [ ] Double error message on navigation failure
+- [x] Replace "/" by "\\" when pasting on address bar
 
 ### V2.0
 
