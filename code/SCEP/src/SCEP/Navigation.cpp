@@ -1,5 +1,6 @@
 #include <SCEP/Navigation.h>
 #include <SCEP/Error.h>
+#include <SCEP/win32_utils.h>
 //
 #include <QFileInfo>
 #include <QFileIconProvider>
@@ -7,6 +8,9 @@
 #include <QPainter>
 #include <QStorageInfo>
 #include <QStandardPaths>
+#include <QThread>
+#include <QMutexLocker>
+#include <QWaitCondition>
 //
 #include <shlobj_core.h>
 #include <shobjidl_core.h>
@@ -22,7 +26,7 @@ struct KnownFolder
 		internalName = intName;
 		displayName = dispName;
 		virtualFolder = virtFolder;
-		qDebug() << QString("new KnownFolder(%1, %2, %3)").arg(internalName).arg(displayName).arg(virtualFolder);
+		//qDebug() << QString("new KnownFolder(%1, %2, %3)").arg(internalName).arg(displayName).arg(virtualFolder);
 	}
 };
 //
@@ -36,8 +40,6 @@ enum class MainFolderId
 	Network,	//!< Network
 	RecycleBin	//!< Recycle bin
 };
-//
-
 //
 struct MainFolder
 {
@@ -165,47 +167,13 @@ public:
 									CoTaskMemFree(pszName);
 								}
 
-#if 0
-								if (kfName.startsWith("Music"))
-								{
-									std::map<SIGDN, QString> sigdns = 
-									{
-										{ SIGDN_NORMALDISPLAY, "SIGDN_NORMALDISPLAY" },
-										{ SIGDN_PARENTRELATIVEPARSING, "SIGDN_PARENTRELATIVEPARSING" },
-										{ SIGDN_DESKTOPABSOLUTEPARSING, "SIGDN_DESKTOPABSOLUTEPARSING" },
-										{ SIGDN_PARENTRELATIVEEDITING, "SIGDN_PARENTRELATIVEEDITING" },
-										{ SIGDN_DESKTOPABSOLUTEEDITING, "SIGDN_DESKTOPABSOLUTEEDITING" },
-										{ SIGDN_FILESYSPATH, "SIGDN_FILESYSPATH" },
-										{ SIGDN_URL, "SIGDN_URL" },
-										{ SIGDN_PARENTRELATIVEFORADDRESSBAR, "SIGDN_PARENTRELATIVEFORADDRESSBAR" },
-										{ SIGDN_PARENTRELATIVE, "SIGDN_PARENTRELATIVE" },
-										{ SIGDN_PARENTRELATIVEFORUI, "SIGDN_PARENTRELATIVEFORUI" }
-									};
-									qDebug() << "SHGetNameFromIDList :";
-									for (auto [sigdn, sigdn_str] : sigdns)
-									{
-										PWSTR pszName = nullptr;
-										HRESULT hr = SHGetNameFromIDList(pidl, sigdn, &pszName);
-										if (SUCCEEDED(hr))
-										{
-											qDebug() << "	" << sigdn_str << " -> " << QString::fromWCharArray(pszName);
-											CoTaskMemFree(pszName);
-										}
-										else
-										{
-											qDebug() << "	" << sigdn_str << " -> FAILED !";
-										}
-									}
-								}
-#endif
-
 								CoTaskMemFree(pidl);
 							}
 
 							// If ok, add to known folders
 							if ( (! internalName.isEmpty()) && (! displayName.isEmpty()) )
 							{
-								qDebug() << kfName;
+								//qDebug() << kfName;
 
 								// Some know folders (like "Music") look like "::{GUID}\\path"
 								// but are not declared as virtual.
@@ -286,6 +254,128 @@ public:
 		return m_iconProvider;
 	}
 };
+//
+//
+//
+#define HICON_IN_BACKGROUND_THREAD 1
+// 
+#if HICON_IN_BACKGROUND_THREAD == 1
+//
+struct GetIconBackgroundoParams
+{
+	GetIconBackgroundoParams(const QString &ip)
+		: m_internalPath(ip)
+	{}
+
+	const QString& m_internalPath;
+	QIcon m_icon;
+};
+//
+class GetIconBackgroundThread : public QThread
+{
+public:
+	explicit GetIconBackgroundThread()
+		: QThread(), p_params(nullptr)
+	{
+		connect(this, &QThread::finished, this, &QObject::deleteLater);
+	}
+
+	void run() override
+	{
+		HRESULT init = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+
+		QMutexLocker readyLocker(&m_readyMutex);
+		while (! m_cancelled.loadRelaxed())
+		{
+			if (! p_params && ! m_cancelled.loadRelaxed() && ! m_readyCondition.wait(&m_readyMutex, QDeadlineTimer(1000ll)))
+				continue;
+
+			if (p_params)
+			{
+				bool result = false;
+				SHFILEINFO info;
+
+				PIDLIST_ABSOLUTE pidl = nullptr;
+				std::wstring wpath = p_params->m_internalPath.toStdWString();
+				HRESULT hr = SHParseDisplayName(wpath.c_str(), 0, &pidl, 0, 0);
+				if (SUCCEEDED(hr))
+				{
+					unsigned int flags = SHGFI_ICON | SHGFI_SMALLICON | SHGFI_SYSICONINDEX | SHGFI_ADDOVERLAYS | SHGFI_OVERLAYINDEX;
+					result = SHGetFileInfo((LPCWSTR) pidl, -1, &info, sizeof(SHFILEINFO), SHGFI_PIDL | flags);
+					CoTaskMemFree(pidl);
+				}
+
+				m_doneMutex.lock();
+				if (! m_cancelled.loadRelaxed())
+				{
+					if (result)
+					{
+						p_params->m_icon = QIcon(QPixmap::fromImage(QImage::fromHICON(info.hIcon)));
+						DestroyIcon(info.hIcon);
+					}
+				}
+				p_params = nullptr;
+				m_doneCondition.wakeAll();
+				m_doneMutex.unlock();
+			}
+		}
+
+		if (init != S_FALSE)
+			CoUninitialize();
+	}
+
+	bool runWithParams(GetIconBackgroundoParams& params, qint64 timeOut_ms)
+	{
+		QMutexLocker doneLocker(&m_doneMutex);
+
+		m_readyMutex.lock();
+		p_params = &params;
+		m_readyCondition.wakeAll();
+		m_readyMutex.unlock();
+
+		return m_doneCondition.wait(&m_doneMutex, QDeadlineTimer(timeOut_ms));
+	}
+
+	void cancel()
+	{
+		QMutexLocker doneLocker(&m_doneMutex);
+		m_cancelled.storeRelaxed(1);
+		m_readyCondition.wakeAll();
+	}
+
+private:
+	GetIconBackgroundoParams* p_params = nullptr;
+	QAtomicInt m_cancelled;
+	QWaitCondition m_readyCondition;
+	QWaitCondition m_doneCondition;
+	QMutex m_readyMutex;
+	QMutex m_doneMutex;
+};
+//
+static QIcon GetIconBackground(const QString& internalName)
+{
+	static constexpr qint64 TimeOut_ms = 500;
+
+	static GetIconBackgroundThread* getIconThread = nullptr;
+	if (! getIconThread)
+	{
+		getIconThread = new GetIconBackgroundThread();
+		getIconThread->start();
+	}
+
+	GetIconBackgroundoParams params(internalName);
+	if (! getIconThread->runWithParams(params, TimeOut_ms))
+	{
+		// Cancel and reset getIconThread. It'll be reinitialized the next time we get called.
+		getIconThread->cancel();
+		getIconThread = nullptr;
+		qWarning() << "SHGetFileInfo() timed out for " << internalName;
+		return {};
+	}
+
+	return params.m_icon;
+}
+#endif //HICON_IN_BACKGROUND_THREAD == 1
 //
 //
 //
@@ -375,38 +465,6 @@ const NavigationPaths& NavigationPath::MainFolders()
 //
 NavigationPath::NavigationPath(PCIDLIST_ABSOLUTE pidlFolder)
 {
-#if 0
-	// DEBUG
-	std::map<SIGDN, QString> sigdns = 
-	{
-		{ SIGDN_NORMALDISPLAY, "SIGDN_NORMALDISPLAY" },
-		{ SIGDN_PARENTRELATIVEPARSING, "SIGDN_PARENTRELATIVEPARSING" },
-		{ SIGDN_DESKTOPABSOLUTEPARSING, "SIGDN_DESKTOPABSOLUTEPARSING" },
-		{ SIGDN_PARENTRELATIVEEDITING, "SIGDN_PARENTRELATIVEEDITING" },
-		{ SIGDN_DESKTOPABSOLUTEEDITING, "SIGDN_DESKTOPABSOLUTEEDITING" },
-		{ SIGDN_FILESYSPATH, "SIGDN_FILESYSPATH" },
-		{ SIGDN_URL, "SIGDN_URL" },
-		{ SIGDN_PARENTRELATIVEFORADDRESSBAR, "SIGDN_PARENTRELATIVEFORADDRESSBAR" },
-		{ SIGDN_PARENTRELATIVE, "SIGDN_PARENTRELATIVE" },
-		{ SIGDN_PARENTRELATIVEFORUI, "SIGDN_PARENTRELATIVEFORUI" }
-	};
-	qDebug() << "SHGetNameFromIDList :";
-	for (auto [sigdn, sigdn_str] : sigdns)
-	{
-		PWSTR pszName = nullptr;
-		HRESULT hr = SHGetNameFromIDList(pidlFolder, sigdn, &pszName);
-		if (SUCCEEDED(hr))
-		{
-			qDebug() << "	" << sigdn_str << "	" << " -> " << QString::fromWCharArray(pszName);
-			CoTaskMemFree(pszName);
-		}
-		else
-		{
-			qDebug() << "	" << sigdn_str << " -> FAILED !";
-		}
-	}
-#endif
-
 	PWSTR pszName = nullptr;
 
 	// Trying to get the file path
@@ -422,7 +480,7 @@ NavigationPath::NavigationPath(PCIDLIST_ABSOLUTE pidlFolder)
 	// example : "Network" virtual folder
 	else
 	{
-		hr = SHGetNameFromIDList(pidlFolder, SIGDN_DESKTOPABSOLUTEPARSING/*SIGDN_NORMALDISPLAY*/, &pszName);
+		hr = SHGetNameFromIDList(pidlFolder, SIGDN_DESKTOPABSOLUTEPARSING, &pszName);
 		if (SUCCEEDED(hr))
 		{
 			if (NavigationPathUtils* pUtils = GetUtils())
@@ -619,9 +677,9 @@ QString NavigationPath::label() const
 	}
 	else
 	{
-		std::wstring wpath = m_internalPath.toStdWString();
-
+		// Parse path as ID list
 		ITEMIDLIST* idlist;
+		std::wstring wpath = m_internalPath.toStdWString();
 		HRESULT hr = SHParseDisplayName(wpath.c_str(), 0, &idlist, 0, 0);
 		if (! SUCCEEDED(hr))
 		{
@@ -630,42 +688,12 @@ QString NavigationPath::label() const
 			return label;
 		}
 
-#if 0
-		std::map<SIGDN, QString> sigdns = 
-		{
-			{ SIGDN_NORMALDISPLAY, "SIGDN_NORMALDISPLAY" },
-			{ SIGDN_PARENTRELATIVEPARSING, "SIGDN_PARENTRELATIVEPARSING" },
-			{ SIGDN_DESKTOPABSOLUTEPARSING, "SIGDN_DESKTOPABSOLUTEPARSING" },
-			{ SIGDN_PARENTRELATIVEEDITING, "SIGDN_PARENTRELATIVEEDITING" },
-			{ SIGDN_DESKTOPABSOLUTEEDITING, "SIGDN_DESKTOPABSOLUTEEDITING" },
-			{ SIGDN_FILESYSPATH, "SIGDN_FILESYSPATH" },
-			{ SIGDN_URL, "SIGDN_URL" },
-			{ SIGDN_PARENTRELATIVEFORADDRESSBAR, "SIGDN_PARENTRELATIVEFORADDRESSBAR" },
-			{ SIGDN_PARENTRELATIVE, "SIGDN_PARENTRELATIVE" },
-			{ SIGDN_PARENTRELATIVEFORUI, "SIGDN_PARENTRELATIVEFORUI" }
-		};
-		qDebug() << "SHGetNameFromIDList :";
-		for (auto [sigdn, sigdn_str] : sigdns)
-		{
-			PWSTR pszName = nullptr;
-			HRESULT hr = SHGetNameFromIDList(idlist, sigdn, &pszName);
-			if (SUCCEEDED(hr))
-			{
-				qDebug() << "	" << sigdn_str << " -> " << QString::fromWCharArray(pszName);
-				CoTaskMemFree(pszName);
-			}
-			else
-			{
-				qDebug() << "	" << sigdn_str << " -> FAILED !";
-			}
-		}
-#endif
-
-		PWSTR pszName;
+		// Get display leaf of the path
+		PWSTR pszName = nullptr;
 		hr = SHGetNameFromIDList(idlist, SIGDN_PARENTRELATIVEEDITING, &pszName);
-		
 		QString name = pszName && SUCCEEDED(hr) ? QString::fromWCharArray(pszName) : QString();
 
+		// Free
 		CoTaskMemFree(idlist);
 		CoTaskMemFree(pszName);
 
@@ -747,24 +775,41 @@ QIcon NavigationPath::icon() const
 	{
 		if (m_virtualFolder)
 		{
-			std::wstring wpath = m_internalPath.toStdWString();
-
+#if HICON_IN_BACKGROUND_THREAD == 1
+			// As stated in MS doc :
+			// "You should call this function from a background thread. Failure to do so could cause the UI to stop responding."
+			// https://docs.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shgetfileinfoa
+			// --> This background thread prevents from icon loading error on some specific virtual folders
+			return GetIconBackground(m_internalPath);
+#else
+			QIcon icon = {};
+			
 			PIDLIST_ABSOLUTE pidl = nullptr;
+			std::wstring wpath = m_internalPath.toStdWString();
 			HRESULT hr = SHParseDisplayName(wpath.c_str(), 0, &pidl, 0, 0);
 			if (SUCCEEDED(hr))
 			{
 				SHFILEINFO info;
-				unsigned int flags = SHGFI_ICON | SHGFI_SMALLICON | SHGFI_SYSICONINDEX | SHGFI_ADDOVERLAYS | SHGFI_OVERLAYINDEX /*| SHGFI_USEFILEATTRIBUTES*/;
+				unsigned int flags = SHGFI_ICON | SHGFI_SMALLICON | SHGFI_SYSICONINDEX | SHGFI_ADDOVERLAYS | SHGFI_OVERLAYINDEX;
 				hr = SHGetFileInfo((LPCWSTR) pidl, -1, &info, sizeof(SHFILEINFO), SHGFI_PIDL | flags);
 				CoTaskMemFree(pidl);
 				if (SUCCEEDED(hr))
 				{
 					QPixmap pixmap = QPixmap::fromImage(QImage::fromHICON(info.hIcon));
 					DestroyIcon(info.hIcon);
-					return QIcon(pixmap);
+					icon = QIcon(pixmap);
+				}
+				else
+				{
+					qWarning() << "NavigationPath::icon() : could not get icon for " << m_internalPath << " (" << GetErrorAsString(hr) << "). Returning empty icon.";
 				}
 			}
-			return {};
+			else
+			{
+				qWarning() << "NavigationPath::icon() : could not parse display name " << m_internalPath << " (" << GetErrorAsString(hr) << "). Returning empty icon.";
+			}
+			return icon;
+#endif //HICON_IN_BACKGROUND_THREAD
 		}
 		else
 		{
@@ -905,4 +950,3 @@ void NavigationHistory::navigateTo(const NavigationPath& path)
 	m_history.resize(m_index+1);
 	m_history[m_index] = path;
 }
-//

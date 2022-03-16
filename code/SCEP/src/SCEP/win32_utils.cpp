@@ -5,6 +5,7 @@
 //
 #include <windows.h>
 #include <shlobj_core.h>
+#include <comdef.h>
 //
 QString GetLastErrorAsString()
 {
@@ -18,7 +19,7 @@ QString GetLastErrorAsString()
 	// Ask Win32 to give us the string version of that message ID.
 	// The parameters we pass in, tell Win32 to create the buffer that holds the message for us (because we don't yet know how long the message string will be).
 	size_t size = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-								 NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&messageBuffer, 0, NULL);
+								 nullptr, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&messageBuffer, 0, nullptr);
 
 	// Copy the error message into a QString.
 	QString message = QString::fromWCharArray(messageBuffer, (int) size);
@@ -27,5 +28,19 @@ QString GetLastErrorAsString()
 	LocalFree(messageBuffer);
 
 	return message;
+}
+//
+QString GetErrorAsString(HRESULT hr)
+{
+	if (! SUCCEEDED(hr))
+	{
+		_com_error err(hr);
+		if (const TCHAR* errorMsg = err.ErrorMessage())
+			return QString::fromWCharArray(errorMsg);
+		else
+			return QString("Unknown error : hr = 0x%1").arg((qlonglong) hr, 0, 16);
+	}
+	else
+		return {};
 }
 //

@@ -249,7 +249,6 @@ inline NavigationPath get_path_property(const QObject* pObject)
 	if (pObject)
 	{
 		QVariant propertyVariant = pObject->property(Path_Id);
-		//qDebug() << "Reading " << Qt::hex << pObject << " -> " << (propertyVariant.isValid() ? propertyVariant.toString() : "\"\"");
 		path = propertyVariant.value<NavigationPath>();
 	}
 	return path;
@@ -260,7 +259,6 @@ inline void set_path_property(QObject* pObject, const NavigationPath& path)
 	if (pObject)
 	{
 		pObject->setProperty(Path_Id, QVariant::fromValue<NavigationPath>(path));
-		//qDebug() << "Writing " << Qt::hex << pObject << " -> " << path;
 		assert(get_path_property(pObject) == path);
 	}
 }
@@ -376,14 +374,12 @@ void BreadcrumbsAddressBar::line_address_focusOutEvent()
 {
 	if (! m_line_address_closeOnFocusOut)
 	{
-		qDebug() << "line_address_focusOutEvent -> ! closeOnFocusOutEvent";
 		// do not cancel edit on context menu
 		m_line_address_closeOnFocusOut = true;
 		return; 
 	}
 	else
 	{
-		qDebug() << "line_address_focusOutEvent -> closeOnFocusOutEvent";
 		_cancel_edit();
 	}
 }
@@ -501,7 +497,6 @@ void BreadcrumbsAddressBar::_insert_crumb(const NavigationPath& path)
 	QSizePolicy sp = btn->sizePolicy();
 	sp.setVerticalPolicy(QSizePolicy::Minimum);
 	btn->setSizePolicy(sp);
-	//qDebug() << path << path_title(path) << btn->size() << btn->sizeHint() << btn->minimumSizeHint();
 }
 //
 void BreadcrumbsAddressBar::crumb_mouse_move(QMouseEvent* /*event*/)
@@ -516,12 +511,11 @@ void BreadcrumbsAddressBar::crumb_menuitem_clicked(const QModelIndex& index)
 //
 void BreadcrumbsAddressBar::onAddressChanged(const QString& path)
 {
-	// Remove leaf
+	// Remove the leaf of the path
 	int index = path.lastIndexOf("\\");
 	QString prefix = (index == -1) ? path : path.left(index) + "\\";
 
-	qDebug() << "BreadcrumbsAddressBar::onAddressChanged" << path << prefix;
-
+	// Update the completer model
 	p_fs_model->setCurrentPath(NavigationPath(prefix, true), {}, FilenameModel::Mode::Completer);
 }
 //
@@ -537,8 +531,6 @@ void BreadcrumbsAddressBar::crumb_menu_show()
 //
 bool BreadcrumbsAddressBar::set_path(const NavigationPath& path)
 {
-	//qDebug() << "set_path" << path.path << path.virtualFolder;
-
 	// exit edit mode
 	_cancel_edit();
 
@@ -546,8 +538,6 @@ bool BreadcrumbsAddressBar::set_path(const NavigationPath& path)
 	ptr_bufferingMovie->stop();
 	p_path_icon->setMovie({});
 	p_path_icon->setToolTip({});
-	//p_path_icon->setScaledContents(false);
-	//p_path_icon->setMaximumSize(p_path_icon->width(), QWIDGETSIZE_MAX); 
 
 	if (! path.isExistingDirectory())
 	{
@@ -584,8 +574,6 @@ bool BreadcrumbsAddressBar::set_path(const NavigationPath& path)
 void BreadcrumbsAddressBar::set_loading(const NavigationPath& path)
 {
 	p_path_icon->setToolTip(tr("Loading %1...").arg(path.displayPath()));
-	//p_path_icon->setScaledContents(true);
-	//p_path_icon->setMaximumSize(p_path_icon->width(), p_path_icon->width()); 
 	p_path_icon->setPixmap({});
 	p_path_icon->setMovie(ptr_bufferingMovie);
 	ptr_bufferingMovie->start();
@@ -618,8 +606,6 @@ void BreadcrumbsAddressBar::requestSenderPathChange()
 //
 void BreadcrumbsAddressBar::_cancel_edit()
 {
-	qDebug() << "_cancel_edit";
-
 	// revert path
 	p_line_address->setText(m_path.displayPath());
 	p_fs_model->setCurrentPath(m_path, {}, FilenameModel::Mode::Completer);
@@ -645,7 +631,6 @@ void BreadcrumbsAddressBar::show_address_field(bool show)
 {
 	this->setUpdatesEnabled(false);
 
-	qDebug() << "show_address_field" << show;
 	if (show)
 	{
 		p_crumbs_container->hide();

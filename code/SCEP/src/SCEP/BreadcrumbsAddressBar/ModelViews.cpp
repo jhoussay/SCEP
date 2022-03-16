@@ -53,7 +53,7 @@ QVariant FilenameModel::data(const QModelIndex &index, int role) const
 		else if (role == PathRole)
 			return item.path.internalPath();
 		else if (role == Qt::DecorationRole)
-			return item.path.icon();
+			return item.path.pixmap(QSize(16, 16));
 		else if (role == Qt::FontRole)
 		{
 			if (! m_fullPath.empty())
@@ -72,42 +72,27 @@ QVariant FilenameModel::data(const QModelIndex &index, int role) const
 //
 void FilenameModel::setCurrentPath(NavigationPath currentPath, const NavigationPath& fullPath, Mode mode)
 {
-	//qDebug() << "FilenameModel::setPathPrefix -> " << prefix;
-
 	if (! NavigationPath::IsAbsolute(currentPath.internalPath()))
 	{
-		if ( (! m_currentPath.empty()) || (m_items.size() == 0) )
+		//if ( (! m_currentPath.empty()) || (m_items.size() == 0) )
 		{
-			//qDebug() << "reject not absolute path " << prefix << "!";
 			beginResetModel();
 			m_currentPath = {};
 			m_fullPath = {};
 			m_items = rootItems();
 			endResetModel();
 		}
-		return;
 	}
-	
-	if (currentPath.isExistingDirectory())
+	else if (currentPath.isExistingDirectory())
 	{
-		//qDebug() << "path = " << path;
-		if (currentPath == m_currentPath)
+		if (currentPath != m_currentPath)
 		{
-			//qDebug() << "already listed !";
-		}
-		else
-		{
-			//qDebug() << "listing...";
 			beginResetModel();
 			m_currentPath = currentPath;
 			m_fullPath = fullPath;
 			m_items = GetItems(m_currentPath, mode);
 			endResetModel();
 		}
-	}
-	else
-	{
-		//qDebug() << "invalid directory !";
 	}
 }
 //
