@@ -42,8 +42,9 @@ TODO
 - [ ] Handle shortcuts in both windows (Qt and win32) : CTRL + T, CTRL+W, CTRL+L...
 - [x] Breadcrumb bar : highlight current folder (with bold font) in menus
 - [ ] Enhance light palette to match the windows palette
-- [ ] Restore window geometry at start
-- [ ] Settings : show hidden files, single instance, theme color (dark, light, auto -> will need restart to take effect)
+- [x] Restore window geometry at start
+- [x] Theme color (dark, light, auto -> will need restart to take effect)
+- [ ] Settings : show hidden files, single instance...
 - [x] QCompleter : propose drives and known folders for non absolutes pathes
 - [x] Handle known folders icons in address bar and tabs
 - [ ] Buffering icon remains on navigation failed

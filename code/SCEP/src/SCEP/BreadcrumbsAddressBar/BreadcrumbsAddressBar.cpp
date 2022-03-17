@@ -270,7 +270,7 @@ BreadcrumbsAddressBar::BreadcrumbsAddressBar(Theme* ptrTheme, QWidget* parent)
 	,	ptr_theme(ptrTheme)
 {
 	setObjectName("BreadcrumbsAddressBar");
-	if (ptr_theme->type() == Theme::Type::Dark)
+	if (ptr_theme->effectiveStyle() == Theme::Style::Dark)
 	{
 		setStyleSheet("QFrame#BreadcrumbsAddressBar { border: 1px solid gray; }");
 	}

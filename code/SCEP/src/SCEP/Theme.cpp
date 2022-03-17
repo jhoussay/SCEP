@@ -1,14 +1,23 @@
-﻿#include <SCEP/Theme.h>
+#include <SCEP/Theme.h>
 //
 #include <Windows.h>
 //
+#include <QSettings>
 #include <QApplication>
 #include <QStyleFactory>
 #include <QPalette>
 #include <QPainter>
 //
-#include <iostream>
 #include <vector>
+//
+static QString ThemeStr = "Theme";
+//
+static std::map<Theme::Style, QString> StylesStr = 
+{
+	{Theme::Style::Auto, "Auto"},
+	{Theme::Style::Dark, "Dark"},
+	{Theme::Style::Light, "Light"}
+};
 //
 static QString Application_DarkStyleSheet = 
 R"(QToolTip {
@@ -86,7 +95,8 @@ R"(QToolTip {
 //
 //
 //
-Theme::Theme()
+Theme::Theme(QSettings* pSettings)
+	:	ptr_settings(pSettings)
 {
 	m_iconPath = 
 	{
@@ -102,37 +112,64 @@ Theme::Theme()
 	};
 
 
-	// Get the type
-	///////////////
+	// Get the style
+	////////////////
 
-	// based on https://stackoverflow.com/questions/51334674/how-to-detect-windows-10-light-dark-mode-in-win32-application
-
-	// The value is expected to be a REG_DWORD, which is a signed 32-bit little-endian
-	auto buffer = std::vector<char>(4);
-	auto cbData = static_cast<DWORD>(buffer.size() * sizeof(char));
-	auto res = RegGetValueW(
-		HKEY_CURRENT_USER,
-		L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
-		L"AppsUseLightTheme",
-		RRF_RT_REG_DWORD, // expected value type
-		nullptr,
-		buffer.data(),
-		&cbData);
-
-	if (res != ERROR_SUCCESS)
+	// User style
+	QString userStyleStr = ptr_settings->value(ThemeStr, StylesStr[Theme::Style::Auto]).toString();
+	bool found = false;
+	for (const auto& [style, styleStr] : StylesStr)
 	{
-		std::cerr << "Error: error_code=" + std::to_string(res) << std::endl;
-		m_type = Type::Light;
+		if (styleStr == userStyleStr)
+		{
+			found = true;
+			m_userStyle = style;
+			break;
+		}
 	}
+	if (! found)
+	{
+		m_userStyle = Theme::Style::Auto;
+		qWarning() << "Invalid user style " << userStyleStr << ". Defaulting to " << StylesStr[m_userStyle];
+	}
+
+	// Auto theme
+	if (m_userStyle == Theme::Style::Auto)
+	{
+		// based on https://stackoverflow.com/questions/51334674/how-to-detect-windows-10-light-dark-mode-in-win32-application
+
+		// The value is expected to be a REG_DWORD, which is a signed 32-bit little-endian
+		std::vector<char> buffer(4);
+		DWORD cbData = static_cast<DWORD>(buffer.size() * sizeof(char));
+		LSTATUS res = RegGetValueW(
+			HKEY_CURRENT_USER,
+			L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+			L"AppsUseLightTheme",
+			RRF_RT_REG_DWORD, // expected value type
+			nullptr,
+			buffer.data(),
+			&cbData);
+
+		if (res != ERROR_SUCCESS)
+		{
+			m_effectiveStyle = Style::Light;
+			qWarning() << "Could not read system theme (error_code =" << res << "). Defaulting to " << StylesStr[m_effectiveStyle];
+		}
+		else
+		{
+			// convert bytes written to our buffer to an int, assuming little-endian
+			auto i = int(buffer[3] << 24 |
+						 buffer[2] << 16 |
+						 buffer[1] << 8 |
+						 buffer[0]);
+
+			m_effectiveStyle = (i == 1) ? Style::Light : Style::Dark;
+		}
+	}
+	// Other themes
 	else
 	{
-		// convert bytes written to our buffer to an int, assuming little-endian
-		auto i = int(buffer[3] << 24 |
-			buffer[2] << 16 |
-			buffer[1] << 8 |
-			buffer[0]);
-
-		m_type = (i == 1) ? Type::Light : Type::Dark;
+		m_effectiveStyle = m_userStyle;
 	}
 
 
@@ -141,7 +178,7 @@ Theme::Theme()
 
 	qApp->setStyle(QStyleFactory::create("Fusion"));
 
-	if (m_type == Type::Dark)
+	if (m_effectiveStyle == Style::Dark)
 	{
 		QPalette darkPalette;
 
@@ -180,14 +217,26 @@ Theme::Theme()
 	}
 }
 //
-Theme::Type Theme::type() const
+Theme::Style Theme::userStyle() const
 {
-	return m_type;
+	return m_userStyle;
+}
+//
+void Theme::setUserStyle(Style userStyle)
+{
+	m_userStyle = userStyle;
+	ptr_settings->setValue(ThemeStr, StylesStr[m_userStyle]);
+	ptr_settings->sync();
+}
+//
+Theme::Style Theme::effectiveStyle() const
+{
+	return m_effectiveStyle;
 }
 //
 QString Theme::path(Icon iconType) const
 {
-	return m_iconPath.at(iconType).arg(m_type == Type::Dark ? "dark" : "light");
+	return m_iconPath.at(iconType).arg(m_effectiveStyle == Style::Dark ? "dark" : "light");
 }
 //
 QPixmap Theme::pixmap(Icon iconType) const

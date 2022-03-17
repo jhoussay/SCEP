@@ -3,6 +3,7 @@
 //
 #include <ui_MainWindow.h>
 //
+#include <QSettings>
 #include <QTabBar>
 #include <QToolButton>
 #include <QMenu>
@@ -28,9 +29,15 @@
 #	define ExplorerWidget ExplorerWidget2
 #endif //EXPLORER_WIDGET_VERSION
 //
-MainWindow::MainWindow(Theme* ptrTheme)
+static const QString GeometryStr = "Geometry";
+static const QString StateStr = "State";
+static const QString TabsStr = "Tabs";
+static const QString CurrentTabStr = "CurrentTab";
+//
+MainWindow::MainWindow(Theme* ptrTheme, QSettings* ptrSettings)
 	:	QMainWindow()
 	,	ptr_theme(ptrTheme)
+	,	ptr_settings(ptrSettings)
 {
 #ifdef FRAMELESS
 	//new FrameLess(this);
@@ -54,7 +61,6 @@ MainWindow::MainWindow(Theme* ptrTheme)
 	connect(pCloseButton, SIGNAL(clicked()), qApp, SLOT(quit()));
 	p_ui->tabWidget->setCornerWidget(pCloseButton, Qt::TopRightCorner);
 #endif //FRAMELESS
-
 
 
 	// Actions
@@ -81,18 +87,30 @@ MainWindow::MainWindow(Theme* ptrTheme)
 	pThemeLayout->addWidget(pThemeLabel);
 	p_themeButtonGroup = new QButtonGroup(pThemeWidget);
 	p_autoThemeButton = new QRadioButton(tr("Auto"), pThemeWidget);
-	p_themeButtonGroup->addButton(p_autoThemeButton);
+	p_autoThemeButton->setChecked(ptr_theme->userStyle() == Theme::Style::Auto);
+	p_themeButtonGroup->addButton(p_autoThemeButton, (int) Theme::Style::Auto);
 	pThemeLayout->addWidget(p_autoThemeButton);
 	p_lightThemeButton = new QRadioButton(tr("Light"), pThemeWidget);
-	p_themeButtonGroup->addButton(p_lightThemeButton);
+	p_lightThemeButton->setChecked(ptr_theme->userStyle() == Theme::Style::Light);
+	p_themeButtonGroup->addButton(p_lightThemeButton, (int) Theme::Style::Light);
 	pThemeLayout->addWidget(p_lightThemeButton);
 	p_darkThemeButton = new QRadioButton(tr("Dark"), pThemeWidget);
-	p_themeButtonGroup->addButton(p_darkThemeButton);
+	p_darkThemeButton->setChecked(ptr_theme->userStyle() == Theme::Style::Dark);
+	p_themeButtonGroup->addButton(p_darkThemeButton, (int) Theme::Style::Dark);
 	pThemeLayout->addWidget(p_darkThemeButton);
 	pThemeWidget->setLayout(pThemeLayout);
-	// TODO connect(p_themeButtonGroup) !!!
+	connect(p_themeButtonGroup, &QButtonGroup::idToggled, this, &MainWindow::styleChanged);
 	p_themeAction = new QWidgetAction(this);
 	p_themeAction->setDefaultWidget(pThemeWidget);
+
+	pThemeWidget->setToolTip(tr("Any style change will take effect on restart"));
+	//QLabel* pThemeTooltipLabel = new QLabel(tr("(restart required)"), this);
+	//pThemeTooltipLabel->setAlignment(Qt::AlignRight);
+	//QFont font = pThemeTooltipLabel->font();
+	//font.setItalic(true);
+	//pThemeTooltipLabel->setFont(font);
+	//p_themeTooltipAction = new QWidgetAction(this);
+	//p_themeTooltipAction->setDefaultWidget(pThemeTooltipLabel);
 
 	p_aboutAction = new QAction(tr("About SCEP..."), this);
 	connect(p_aboutAction, SIGNAL(triggered()), this, SLOT(about()));
@@ -116,11 +134,54 @@ MainWindow::MainWindow(Theme* ptrTheme)
 
 	updateIcons();
 
-	addNewTab();
+	// Geometry
+	///////////
+
+	restoreState(ptr_settings->value(StateStr).toByteArray());
+	restoreGeometry(ptr_settings->value(GeometryStr).toByteArray());
+
+
+	// Tabs
+	///////
+
+	QStringList tabs = ptr_settings->value(TabsStr).toStringList();
+	if (tabs.isEmpty())
+	{
+		addNewTab();
+	}
+	else
+	{
+		for (const QString& tab : tabs)
+		{
+			NavigationPath path(tab);
+			if (path.isExistingDirectory())
+			{
+				addNewTab(path, NewTabPosition::Last, NewTabBehaviour::None);
+			}
+			else
+			{
+				qWarning() << "Cannot restore tab on " << tab << " because it does not exist anymore or cannot be reached.";
+			}
+		}
+
+		int currentTab = ptr_settings->value(CurrentTabStr, 0).toInt();
+		if ( (currentTab >= 0) && (currentTab < p_ui->tabWidget->count()) )
+		{
+			p_ui->tabWidget->setCurrentIndex(currentTab);
+		}
+		else
+		{
+			qWarning() << "Invalid current index : " << currentTab;
+		}
+	}
 }
 //
 MainWindow::~MainWindow()
 {
+	ptr_settings->setValue(StateStr, saveState());
+	ptr_settings->setValue(GeometryStr, saveGeometry());
+	ptr_settings->sync();
+
 	delete p_ui;
 	p_ui = nullptr;
 }
@@ -266,6 +327,7 @@ void MainWindow::showMenu()
 	menu.addAction(p_aboutAction);
 	menu.addSeparator();
 	menu.addAction(p_themeAction);
+	//menu.addAction(p_themeTooltipAction);
 
 	// Get menu real width
 	menu.show();
@@ -344,6 +406,12 @@ QLabel* getIconLabel(ExplorerWidget* pExplorerWidget, QTabWidget* pTabWidget)
 	return nullptr;
 }
 //
+void MainWindow::styleChanged(int style)
+{
+	Theme::Style userStyle = (Theme::Style) style;
+	ptr_theme->setUserStyle(userStyle);
+}
+//
 void MainWindow::onTabCloseRequested()
 {
 	if (QToolButton* pToolButton = dynamic_cast<QToolButton*>(sender()))
@@ -393,10 +461,26 @@ void MainWindow::tabClosed()
 //
 void MainWindow::closeEvent(QCloseEvent* pEvent)
 {
+	// Current tabs init
+	int currentTab = p_ui->tabWidget->currentIndex();
+	QStringList tabs;
+
+	// Current tabs (while closing them in order to prevent any handle leak)
 	while (p_ui->tabWidget->count() > 0)
 	{
+		ExplorerWidget* pExplorerWidget = dynamic_cast<ExplorerWidget*>(p_ui->tabWidget->widget(0));
+		assert(pExplorerWidget);
+		if (pExplorerWidget)
+			tabs << pExplorerWidget->currentPath().internalPath();
 		closeTab(0, false);
 	}
+
+	// Saving tabs
+	ptr_settings->setValue(TabsStr, tabs);
+	ptr_settings->setValue(CurrentTabStr, currentTab);
+	ptr_settings->sync();
+
+	// Close
 	QMainWindow::closeEvent(pEvent);
 }
 //

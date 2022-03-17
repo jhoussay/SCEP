@@ -18,6 +18,7 @@ class QWidgetAction;
 class QToolButton;
 class QRadioButton;
 class QButtonGroup;
+class QSettings;
 //
 namespace Ui
 {
@@ -33,7 +34,7 @@ class MainWindow : public QMainWindow
 	Q_OBJECT
 
 public:
-	MainWindow(Theme* ptrTheme);
+	MainWindow(Theme* ptrTheme, QSettings* ptrSettings);
 	~MainWindow();
 
 #ifdef FRAMELESS
@@ -48,11 +49,13 @@ protected:
 	void			mouseMoveEvent(QMouseEvent* pEvent) override;
 #endif //FRAMELESS
 
-protected slots:
+private slots:
 	void			addNewTab(NavigationPath path = {}, NewTabPosition position = NewTabPosition::Last, NewTabBehaviour behaviour = NewTabBehaviour::Current);
 	void			closeCurrentTab();
 	void			showMenu();
 	void			about();
+
+	void			styleChanged(int styleId);
 
 	void			onTabCloseRequested();
 
@@ -71,11 +74,13 @@ private:
 
 private:
 	Theme* ptr_theme = nullptr;
+	QSettings* ptr_settings = nullptr;
 	Ui::MainWindow* p_ui = nullptr;
 
 	QAction* p_addTabAction = nullptr;
 	QAction* p_closeTabAction = nullptr;
 	QWidgetAction* p_themeAction = nullptr;
+	QWidgetAction* p_themeTooltipAction = nullptr;
 	QRadioButton* p_autoThemeButton = nullptr;
 	QRadioButton* p_lightThemeButton = nullptr;
 	QRadioButton* p_darkThemeButton = nullptr;

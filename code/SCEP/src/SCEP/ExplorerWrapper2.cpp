@@ -1,4 +1,4 @@
-﻿#include <SCEP/ExplorerWrapper2.h>
+#include <SCEP/ExplorerWrapper2.h>
 #include <SCEP/Theme.h>
 #include <SCEP/win32_utils.h>
 //
@@ -112,7 +112,7 @@ ErrorPtr ExplorerWrapper2::initialize(const NavigationPath& path)
 	CHECK(m_hwnd != nullptr, GetLastErrorAsString());
 
 	// Dark mode
-	if (ptr_theme && (ptr_theme->type() == Theme::Type::Dark) )
+	if (ptr_theme && (ptr_theme->effectiveStyle() == Theme::Style::Dark) )
 	{
 		linkollector::win::init_dark_mode_support();
 		linkollector::win::enable_dark_mode(m_hwnd, true);
@@ -602,7 +602,7 @@ std::map<long, QString> ExplorerWrapper2::getContextMenuCustomOptions(const Navi
 	return rslt;
 }
 //
-void ExplorerWrapper2::notifyContextMenuCustomOption(int iOption, const NavigationPath& contextMenuFocusedPath)
+void ExplorerWrapper2::notifyContextMenuCustomOption([[maybe_unused]] int iOption, const NavigationPath& contextMenuFocusedPath)
 {
 	assert(iOption == 0);
 	if (contextMenuFocusedPath.isExistingDirectory())
