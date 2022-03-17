@@ -1,4 +1,4 @@
-﻿#include <SCEP/MainWindow.h>
+#include <SCEP/MainWindow.h>
 #include <SCEP/AboutDialog.h>
 //
 #include <ui_MainWindow.h>
@@ -13,9 +13,9 @@
 #include <QWidgetAction>
 #include <QRadioButton>
 #include <QButtonGroup>
+#include <QMouseEvent>
 //
 #ifdef FRAMELESS
-#include <QMouseEvent>
 #include <QPushButton>
 #endif //FRAMELESS
 //
@@ -41,6 +41,7 @@ MainWindow::MainWindow(Theme* ptrTheme)
 	p_ui = new Ui::MainWindow();
 	p_ui->setupUi(this);
 	p_ui->tabWidget->setTabsClosable(false);
+	p_ui->tabWidget->tabBar()->installEventFilter(this);
 
 #ifdef FRAMELESS
 	QIcon icon = qApp->windowIcon();
@@ -397,6 +398,28 @@ void MainWindow::closeEvent(QCloseEvent* pEvent)
 		closeTab(0, false);
 	}
 	QMainWindow::closeEvent(pEvent);
+}
+//
+bool MainWindow::eventFilter([[maybe_unused]] QObject *obj, QEvent *event)
+{
+	if (event->type() == QEvent::MouseButtonPress)
+	{
+		QMouseEvent* pMouseEvent = dynamic_cast<QMouseEvent*>(event);
+		assert(pMouseEvent);
+		if (pMouseEvent->button() == Qt::MiddleButton)
+		{
+			QTabBar* pTabBar = p_ui->tabWidget->tabBar();
+			assert(obj == pTabBar);
+			QPoint pos = pTabBar->mapFromGlobal(pMouseEvent->globalPos());
+			int tabIndex = p_ui->tabWidget->tabBar()->tabAt(pos);
+			if (tabIndex >= 0)
+			{
+				closeTab(tabIndex);
+				return true;
+			}
+		}
+	}
+	return false;
 }
 //
 void MainWindow::closeTab(int tabIndex, bool closeAppIfNoRemainingTab)

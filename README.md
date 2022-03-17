@@ -29,7 +29,7 @@ TODO
 - [x] Application menu
 - [x] About window
 - [ ] Tab context menu : close tab, duplicate tab, copy full path to clipboard, close other tabs
-- [ ] Close tab with middle click
+- [x] Close tab with middle click
 - [ ] Installation program
 - [ ] Handle "&" in tab text
 - [ ] Doxygen comments and html generation

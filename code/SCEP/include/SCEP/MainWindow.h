@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 //
 #include <SCEP/SCEP.h>
 #include <SCEP/Theme.h>
@@ -62,6 +62,7 @@ protected slots:
 
 protected:
 	void			closeEvent(QCloseEvent* pEvent) override;
+	bool			eventFilter(QObject *obj, QEvent *event) override;
 
 private:
 	void			closeTab(int tabIndex, bool closeAppIfNoRemainingTab = true);
