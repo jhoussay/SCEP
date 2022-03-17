@@ -266,3 +266,17 @@ private:
 	int					m_index = -1;
 };
 
+/**
+ *	@ingroup				SCEP
+ *	@brief				Navigation request
+ */
+struct NavigationRequest
+{
+	NavigationPath						path;			//!< Requested path
+	std::optional<NavigationHistory>	history;		//!< History override (when navigating backward or forward)
+
+	inline NavigationRequest(const NavigationPath p, const std::optional<NavigationHistory>& h = {})
+		:	path(p)
+		,	history(h)
+	{}
+};

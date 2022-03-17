@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 //
 #include <SCEP/Error.h>
 #include <SCEP/SCEP.h>
@@ -47,12 +47,13 @@ signals:
 	void					closed();
 
 protected slots:
-	void					onLoading(const NavigationPath& path);
-	void					onPathChanged(const NavigationPath& path, bool success);
-
 	void					navigateBackward();
 	void					navigateForward();
 	void					navigateUp();
+	void					navigateTo(const NavigationRequest& request);
+
+	void					onLoading(const NavigationPath& path);
+	void					onPathChanged(const NavigationPath& path, bool success);
 
 private:
 	Theme*					ptr_theme			=	nullptr;	//!< Application theme
@@ -66,8 +67,7 @@ private:
 	BreadcrumbsAddressBar*	p_addressBar		=	nullptr;	//!< Address bar widget
 	QToolBar*				p_toolBar			=	nullptr;	//!< ToolBar containing navigation buttons and address bar
 
-	bool					m_onNavigation		=	false;		//!< Indicates whether a navigation is in progress, i.e. started with setCurrentPath()
-																//!< but not finished with onPathChanged()
-	std::queue<NavigationPath> m_pendingPathes	=	{};			//!< Navigation pathes requested but not processed yet
-	NavigationHistory		m_navigationHistory	=	{};			//!< Navigation history
+	std::queue<NavigationRequest>	m_pendingRequests	=	{};	//!< Navigation pathes requested but not processed yet
+	std::optional<NavigationRequest>m_currentRequest	=	{};	//!< Current request
+	NavigationHistory				m_navigationHistory	=	{};	//!< Navigation history
 };

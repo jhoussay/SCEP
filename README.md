@@ -24,7 +24,7 @@ TODO
 ### V1.0
 
 - [x] Address bar
-- [ ] Back and forward buttons
+- [x] Back and forward buttons
 - [x] Application icon on exe file
 - [x] Application menu
 - [x] About window
@@ -51,6 +51,7 @@ TODO
 - [x] Double error message on navigation failure
 - [x] Replace "/" by "\\" when pasting on address bar
 - [x] Intermitent missing icon bug for virtual folders
+- [ ] History menu on backward / forward buttons
 
 ### V2.0
 

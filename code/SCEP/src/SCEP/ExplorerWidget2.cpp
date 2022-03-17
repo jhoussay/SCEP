@@ -38,7 +38,7 @@ ExplorerWidget2::ExplorerWidget2(Theme* ptrTheme, QWidget* pParent, Qt::WindowFl
 	//p_forwardMenu->addAction("toto");
 	//p_forwardAction->setMenu(p_backwardMenu);
 	p_forwardAction->setEnabled(false);
-	connect(p_forwardAction, &QAction::triggered, this, &ExplorerWidget2::navigateBackward);
+	connect(p_forwardAction, &QAction::triggered, this, &ExplorerWidget2::navigateForward);
 	p_toolBar->addAction(p_forwardAction);
 
 	// Parent button
@@ -100,26 +100,7 @@ ErrorPtr ExplorerWidget2::init(const NavigationPath& path)
 //
 void ExplorerWidget2::setCurrentPath(const NavigationPath& path)
 {
-	if (p_wrapper)
-	{
-		// Already navigating ?
-		if (m_onNavigation)
-		{
-			// Enqueue the request
-			m_pendingPathes.push(path);
-		}
-		// Ready for action ?
-		else
-		{
-			// Ask for navigation
-			m_onNavigation = true;
-			if (ErrorPtr pError = p_wrapper->setCurrentPath(path) )
-			{
-				displayError(pError);
-				//onPathChanged(path, false);
-			}
-		}
-	}
+	navigateTo(path);
 }
 //
 const NavigationPath& ExplorerWidget2::currentPath() const
@@ -137,6 +118,66 @@ const NavigationPath& ExplorerWidget2::currentPath() const
 	}
 }
 //
+void ExplorerWidget2::navigateBackward()
+{
+	if (m_navigationHistory.hasBackward().has_value())
+	{
+		NavigationHistory new_history = m_navigationHistory;
+		std::optional<NavigationPath> new_path = new_history.navigateBackward();
+		assert(new_path.has_value());
+		if (new_path.has_value())
+		{
+			navigateTo({new_path.value(), new_history});
+		}
+	}
+}
+//
+void ExplorerWidget2::navigateForward()
+{
+	if (m_navigationHistory.hasForward().has_value())
+	{
+		NavigationHistory new_history = m_navigationHistory;
+		std::optional<NavigationPath> new_path = new_history.navigateForward();
+		assert(new_path.has_value());
+		if (new_path.has_value())
+		{
+			navigateTo({new_path.value(), new_history});
+		}
+	}
+}
+//
+void ExplorerWidget2::navigateUp()
+{
+	const NavigationPath& path = currentPath();
+	if (path.hasParent())
+	{
+		navigateTo(path.parent().value());
+	}
+}
+//
+void ExplorerWidget2::navigateTo(const NavigationRequest& request)
+{
+	if (p_wrapper)
+	{
+		// Already navigating ?
+		if (m_currentRequest.has_value())
+		{
+			// Enqueue the request
+			m_pendingRequests.push(request);
+		}
+		// Ready for action ?
+		else
+		{
+			// Ask for navigation
+			m_currentRequest = request;
+			if (ErrorPtr pError = p_wrapper->setCurrentPath(request.path) )
+			{
+				displayError(pError);
+			}
+		}
+	}
+}
+//
 void ExplorerWidget2::onLoading(const NavigationPath& path)
 {
 	p_addressBar->set_loading(path);
@@ -148,9 +189,24 @@ void ExplorerWidget2::onPathChanged(const NavigationPath& path, bool success)
 	// Process the path changed
 	if (success)
 	{
+		// Get current request
+		// - there is a current request if the user makes use of the navigation buttons or the crumbread bar
+		// - there is no current request if the user navigates with the explorer
+		//   Caution : if there was a request but the path does not correspond, simply ignore the request
+		//   (and especially the associated history, if any)
+		std::optional<NavigationRequest>& request = m_currentRequest;
+		if (request.has_value() && request.value().path != path)
+		{
+			qWarning() << "Navigation to " << request.value().path.displayPath() << " was requested, but the browser navigated to " << path.displayPath();
+			request = std::nullopt;
+		}
+
 		// On success :
 		// - update the navigation history
-		m_navigationHistory.navigateTo(path);
+		if (request.has_value() && request.value().history.has_value())
+			m_navigationHistory = request.value().history.value();
+		else
+			m_navigationHistory.navigateTo(path);
 		// - update the adress bar
 		p_addressBar->set_path(path);
 		// - enable/disable the buttons
@@ -159,7 +215,6 @@ void ExplorerWidget2::onPathChanged(const NavigationPath& path, bool success)
 			if (backwardPath.has_value())
 			{
 				p_backwardAction->setEnabled(true);
-				// TODO use backwardPath.value().userPath()
 				p_backwardAction->setText(tr("Navigate backward to \"%1\"").arg(backwardPath.value().displayPath()));
 			}
 			else
@@ -173,7 +228,6 @@ void ExplorerWidget2::onPathChanged(const NavigationPath& path, bool success)
 			if (forwardPath.has_value())
 			{
 				p_forwardAction->setEnabled(true);
-				// TODO use forwardPath.value().userPath()
 				p_forwardAction->setText(tr("Navigate forward to \"%1\"").arg(forwardPath.value().displayPath()));
 			}
 			else
@@ -195,32 +249,11 @@ void ExplorerWidget2::onPathChanged(const NavigationPath& path, bool success)
 	}
 
 	// Is there any navigation request ?
-	m_onNavigation = false;
-	if (! m_pendingPathes.empty())
+	m_currentRequest = std::nullopt;
+	if (! m_pendingRequests.empty())
 	{
-		NavigationPath newPath = m_pendingPathes.front();
-		m_pendingPathes.pop();
-		setCurrentPath(newPath);
+		NavigationRequest request = m_pendingRequests.front();
+		m_pendingRequests.pop();
+		navigateTo(request);
 	}
 }
-//
-void ExplorerWidget2::navigateBackward()
-{
-
-}
-//
-void ExplorerWidget2::navigateForward()
-{
-
-}
-//
-void ExplorerWidget2::navigateUp()
-{
-	const NavigationPath& path = currentPath();
-	if (path.hasParent())
-	{
-		setCurrentPath(path.parent().value());
-	}
-}
-//
-
