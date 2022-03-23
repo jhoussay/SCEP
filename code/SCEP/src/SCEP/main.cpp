@@ -3,6 +3,10 @@
 #include <SCEP/Theme.h>
 //
 #include <QApplication>
+#include <QSettings>
+//
+static const QString OrganizationStr = "SCEP";
+static const QString ApplicationStr = "SCEP";
 //
 int main(int argc, char *argv[])
 {
@@ -10,8 +14,9 @@ int main(int argc, char *argv[])
 
 	int rslt = 0;
 	{
-		Theme theme;
-		MainWindow mainWindow(&theme);
+		QSettings settings(QSettings::IniFormat, QSettings::UserScope, OrganizationStr, "SCEP");
+		Theme theme(&settings);
+		MainWindow mainWindow(&theme, &settings);
 		mainWindow.show();
 
 		rslt = app.exec();
