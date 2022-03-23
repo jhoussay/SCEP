@@ -3,6 +3,9 @@
 /code/.qmake.stash
 /code/SCEP/include/SCEP/Date.h
 /code/SCEP/include/SCEP/Version.h
+/setup/SCEP/.vs/*
+/setup/SCEP/Debug/*
+/setup/SCEP/Release/*
 /tmp/*
 env.bat
 *.sln

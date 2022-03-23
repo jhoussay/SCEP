@@ -30,7 +30,7 @@ TODO
 - [x] About window
 - [ ] Tab context menu : close tab, duplicate tab, copy full path to clipboard, close other tabs
 - [x] Close tab with middle click
-- [ ] Installation program
+- [x] Installation program
 - [ ] Handle "&" in tab text
 - [ ] Doxygen comments and html generation
 - [x] "Translate" pathes as explorer.exe does.
@@ -53,9 +53,11 @@ TODO
 - [x] Replace "/" by "\\" when pasting on address bar
 - [x] Intermitent missing icon bug for virtual folders
 - [ ] History menu on backward / forward buttons
+- [ ] Automatic versioning for vdproj --> msi
 
 ### V2.0
 
+- [ ] GitHub actions
 - [ ] Search !
 - [ ] Help window
 - [ ] I18N
