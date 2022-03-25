@@ -1,5 +1,6 @@
 #include <SCEP/MainWindow.h>
 #include <SCEP/AboutDialog.h>
+#include <SCEP/ExplorerWidget.h>
 //
 #include <ui_MainWindow.h>
 //
@@ -19,15 +20,6 @@
 #ifdef FRAMELESS
 #include <QPushButton>
 #endif //FRAMELESS
-//
-#define EXPLORER_WIDGET_VERSION 2
-// 
-#if EXPLORER_WIDGET_VERSION == 1
-#	include <SCEP/ExplorerWidget.h>
-#else
-#	include <SCEP/ExplorerWidget2.h>
-#	define ExplorerWidget ExplorerWidget2
-#endif //EXPLORER_WIDGET_VERSION
 //
 static const QString GeometryStr = "Geometry";
 static const QString StateStr = "State";

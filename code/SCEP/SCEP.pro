@@ -4,17 +4,14 @@ TEMPLATE = app
 
 # Other libs
 QT *= core gui widgets
-LIBS *= -lUxTheme
-include(../third_parties/gears/gears.prf)
+LIBS *= -lShlwapi -lUxTheme
 include(../third_parties/linkollector-win/linkollector-win.prf)
 
 # h
 INCLUDEPATH *= include
 HEADERS += include/SCEP/SCEP.h
 HEADERS += include/SCEP/ExplorerWidget.h
-HEADERS += include/SCEP/ExplorerWidget2.h
 HEADERS += include/SCEP/ExplorerWrapper.h
-HEADERS += include/SCEP/ExplorerWrapper2.h
 HEADERS += include/SCEP/Error.h
 HEADERS += include/SCEP/MainWindow.h
 HEADERS += include/SCEP/Theme.h
@@ -29,9 +26,7 @@ HEADERS += include/SCEP/BreadcrumbsAddressBar/Stylesheets.h
 # cpp
 SOURCES += src/SCEP/main.cpp
 SOURCES += src/SCEP/ExplorerWidget.cpp
-SOURCES += src/SCEP/ExplorerWidget2.cpp
 SOURCES += src/SCEP/ExplorerWrapper.cpp
-SOURCES += src/SCEP/ExplorerWrapper2.cpp
 SOURCES += src/SCEP/MainWindow.cpp
 SOURCES += src/SCEP/Theme.cpp
 SOURCES += src/SCEP/AboutDialog.cpp

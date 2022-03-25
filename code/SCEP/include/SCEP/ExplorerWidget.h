@@ -1,13 +1,23 @@
-﻿#pragma once
+#pragma once
 //
 #include <SCEP/Error.h>
+#include <SCEP/SCEP.h>
+#include <SCEP/Navigation.h>
 //
 #include <QWidget>
 //
+#include <queue>
+//
 class ExplorerWrapper;
+class BreadcrumbsAddressBar;
 class Theme;
 //
+class QToolBar;
+class QAction;
+class QMenu;
+//
 /**
+ *	@ingroup				SCEP
  *	@brief				
  */
 class ExplorerWidget : public QWidget
@@ -25,27 +35,39 @@ public:
 	virtual ~ExplorerWidget();
 
 public:
-	ErrorPtr init(const QString& path = {});
+	ErrorPtr				init(const NavigationPath& path = {});
 
-	ErrorPtr setCurrentPath(const QString& path);
-	QString currentPath() const;
+	void					setCurrentPath(const NavigationPath& path);
+	const NavigationPath&	currentPath() const;
 
 signals:
-	void	loading(QString path);
-	void	pathChanged(QString path);
-	void	closed();
+	void					loading(const NavigationPath& path);
+	void					pathChanged(const NavigationPath& path);
+	void					openNewTab(const NavigationPath& path, NewTabPosition position, NewTabBehaviour behaviour);
+	void					closed();
 
-protected:
-	void	paintEvent(QPaintEvent* pEvent) override;
+protected slots:
+	void					navigateBackward();
+	void					navigateForward();
+	void					navigateUp();
+	void					navigateTo(const NavigationRequest& request);
+
+	void					onLoading(const NavigationPath& path);
+	void					onPathChanged(const NavigationPath& path, bool success);
 
 private:
-	ErrorPtr updateEmbeddedWidget_p();
-	void updateEmbeddedWidget();
+	Theme*					ptr_theme			=	nullptr;	//!< Application theme
+	ExplorerWrapper*		p_wrapper			=	nullptr;	//!< Wrapper for explorer win32 window (without address bar)
+	QWidget*				p_widget			=	nullptr;	//!< Widget embedding explorer win32 window
+	QAction*				p_backwardAction	=	nullptr;	//!< Navigate backward action
+//	QMenu*					p_backwardMenu		=	nullptr;	//!< Navigate backward action menu
+	QAction*				p_forwardAction		=	nullptr;	//!< Navigate forward action
+//	QMenu*					p_forwardMenu		=	nullptr;	//!< Navigate forward action menu
+	QAction*				p_parentAction		=	nullptr;	//!< Navigate to parent folder action
+	BreadcrumbsAddressBar*	p_addressBar		=	nullptr;	//!< Address bar widget
+	QToolBar*				p_toolBar			=	nullptr;	//!< ToolBar containing navigation buttons and address bar
 
-private:
-	Theme* ptr_theme = nullptr;
-	ExplorerWrapper* p_wrapper = nullptr;
-	HWND m_windowId = 0;
-	bool m_visibleExplorer = false;
-	QWidget* p_widget = nullptr;
+	std::queue<NavigationRequest>	m_pendingRequests	=	{};	//!< Navigation pathes requested but not processed yet
+	std::optional<NavigationRequest>m_currentRequest	=	{};	//!< Current request
+	NavigationHistory				m_navigationHistory	=	{};	//!< Navigation history
 };

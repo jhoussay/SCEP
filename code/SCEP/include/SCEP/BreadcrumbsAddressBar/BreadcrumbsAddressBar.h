@@ -43,7 +43,7 @@ class BreadcrumbsAddressBar : public QFrame
 	friend class AddressLineEdit;
 	friend class SwitchSpaceWidget;
 	friend class StyledToolButton;
-	friend class ExplorerWidget2;
+	friend class ExplorerWidget;
 
 	Q_OBJECT
 

@@ -53,7 +53,7 @@ TODO
 - [x] Replace "/" by "\\" when pasting on address bar
 - [x] Intermitent missing icon bug for virtual folders
 - [ ] History menu on backward / forward buttons
-- [ ] Automatic versioning for vdproj --> msi
+- [ ] Automatic versioning for vdproj --> msi OR migration to WiX
 
 ### V2.0
 
@@ -69,6 +69,13 @@ TODO
 - [ ] Reopen closed instances
 
 ## Building from sources
+
+### Prerequisites
+
+- Microsoft Visual Studio 2022
+- Qt 6.2.3 for MSVC 2022 or MSVC 2019
+- Visual Studio extension : Microsoft Visual Studio Installer Projects 2022
+
 
 TODO
 

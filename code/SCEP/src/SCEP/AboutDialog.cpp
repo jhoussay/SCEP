@@ -36,10 +36,10 @@ AboutDialog::AboutDialog(QWidget* pParent, Qt::WindowFlags flags)
 	QString appDir = qApp->applicationDirPath();
 	QString licenseFileSCEP = getFullPath("LICENSE", {appDir, appDir + "/../.."});
 	QString licenseFileQt = getFullPath("Qt.license", {appDir + "/third_parties_licenses", appDir + "/../../setup/third_parties_licenses"});
-	QString licenseFileGears = getFullPath("/gears.license", {appDir + "/third_parties_licenses", appDir + "/../../setup/third_parties_licenses"});
+	QString licenseFileLinkollectorWin = getFullPath("linkollector-win.license", {appDir + "/third_parties_licenses", appDir + "/../../setup/third_parties_licenses"});
 
 	QString sparseAbout = p_ui->aboutLabel->text();
-	QString about = sparseAbout.arg(version).arg(SCEP_DATE).arg(licenseFileSCEP).arg(licenseFileQt).arg(licenseFileGears);
+	QString about = sparseAbout.arg(version).arg(SCEP_DATE).arg(licenseFileSCEP).arg(licenseFileQt).arg(licenseFileLinkollectorWin);
 	p_ui->aboutLabel->setText(about);
 }
 //

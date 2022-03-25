@@ -4,9 +4,9 @@
 "ProjectType" = "8:{978C614F-708E-4E1A-B201-565925725DBA}"
 "IsWebType" = "8:FALSE"
 "ProjectName" = "8:SCEP"
-"LanguageId" = "3:1033"
+"LanguageId" = "3:0"
 "CodePage" = "3:1252"
-"UILanguageId" = "3:1033"
+"UILanguageId" = "3:0"
 "SccProjectName" = "8:"
 "SccLocalPath" = "8:"
 "SccAuxPath" = "8:"
@@ -22,12 +22,6 @@
         "Entry"
         {
         "MsmKey" = "8:_1947F358302B4682A11DA497E671ABD1"
-        "OwnerKey" = "8:_UNDEFINED"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_1A77840A417F4DE7983DF0A83E95C743"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -148,6 +142,12 @@
         "Entry"
         {
         "MsmKey" = "8:_C85E1177C43A4F99849DF87CCB9E8500"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_CB21DC78D67C40D29623F995EAA53A81"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -312,26 +312,6 @@
             "TargetName" = "8:Qt6Svg.dll"
             "Tag" = "8:"
             "Folder" = "8:_AFF7DB76D9304E40B43F2E3C831E052F"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:FALSE"
-            "IsolateTo" = "8:"
-            }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_1A77840A417F4DE7983DF0A83E95C743"
-            {
-            "SourcePath" = "8:..\\third_parties_licenses\\gears.license"
-            "TargetName" = "8:gears.license"
-            "Tag" = "8:"
-            "Folder" = "8:_0E980B56FDE8413CBACC60CD767B7CEA"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -746,6 +726,26 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_CB21DC78D67C40D29623F995EAA53A81"
+            {
+            "SourcePath" = "8:..\\third_parties_licenses\\linkollector-win.license"
+            "TargetName" = "8:linkollector-win.license"
+            "Tag" = "8:"
+            "Folder" = "8:_0E980B56FDE8413CBACC60CD767B7CEA"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_CE3D70FF938F420FAEBB692F223337A8"
             {
             "SourcePath" = "8:..\\..\\bin\\release\\msvcp140_1.dll"
@@ -921,17 +921,6 @@
             "Property" = "8:ProgramMenuFolder"
                 "Folders"
                 {
-                    "{9EF0B969-E518-4E46-987F-47570745A589}:_8875EBBB6716405A86187E5DB92976FF"
-                    {
-                    "Name" = "8:SCEP"
-                    "AlwaysCreate" = "11:FALSE"
-                    "Condition" = "8:"
-                    "Transitive" = "11:FALSE"
-                    "Property" = "8:_7B205CC478344384B9F072465883F2EE"
-                        "Folders"
-                        {
-                        }
-                    }
                 }
             }
             "{3C67513D-01DD-4637-8A68-80971EB9504F}:_AFF7DB76D9304E40B43F2E3C831E052F"
@@ -1043,7 +1032,7 @@
         }
         "MsiBootstrapper"
         {
-        "LangId" = "3:1033"
+        "LangId" = "3:0"
         "RequiresElevation" = "11:FALSE"
         }
         "Product"
@@ -1051,7 +1040,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:SCEP"
         "ProductCode" = "8:{DA0D30AA-C665-4A5F-AE14-0C98B0432961}"
-        "PackageCode" = "8:{1422D7B8-A261-4C9A-A866-6E985B25014D}"
+        "PackageCode" = "8:{5932B089-AD38-46C1-8060-3C1509425CBA}"
         "UpgradeCode" = "8:{85EA2171-9FB2-48FA-A029-28AFEFF622BB}"
         "AspNetVersion" = "8:2.0.50727.0"
         "RestartWWWService" = "11:FALSE"
@@ -1180,7 +1169,7 @@
             "IconIndex" = "3:0"
             "Transitive" = "11:FALSE"
             "Target" = "8:_D45DA6D3B0624A8AAD8ACF9544B7AC06"
-            "Folder" = "8:_8875EBBB6716405A86187E5DB92976FF"
+            "Folder" = "8:_85DE66AB5E5549298507244B8897FD90"
             "WorkingFolder" = "8:_AFF7DB76D9304E40B43F2E3C831E052F"
             "Icon" = "8:_E7107A6DC9BD43A38A520793A6D223CB"
             "Feature" = "8:"
