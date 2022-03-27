@@ -53,7 +53,7 @@ TODO
 - [x] Replace "/" by "\\" when pasting on address bar
 - [x] Intermitent missing icon bug for virtual folders
 - [ ] History menu on backward / forward buttons
-- [ ] Automatic versioning for vdproj --> msi OR migration to WiX
+- [x] Automatic versioning for vdproj
 
 ### V2.0
 

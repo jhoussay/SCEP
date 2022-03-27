@@ -12,7 +12,6 @@ if (-not(Test-Path -Path $env -PathType Leaf))
 
 & $env
 
-
 # vcvarsall.bat
 # -------------
 $vcvarsall = "$env:VCVARSALL_DIR\vcvarsall.bat"
@@ -46,7 +45,6 @@ $date_header = "code\SCEP\include\SCEP\Date.h"
 cd "$PSScriptRoot"
 "#pragma once" > $date_header
 "static const char* SCEP_DATE = ""$date"";" >> $date_header
-
 
 # version
 # -------
