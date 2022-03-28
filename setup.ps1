@@ -5,7 +5,7 @@
 
 $env = "$PSScriptRoot\env.ps1"
 if (-not(Test-Path -Path $env -PathType Leaf)) {
-    echo env.ps1 file does not exist ! Please copy env.ps1.proto to env.ps1 and set up your environment.
+    Write-Output "env.ps1 file does not exist ! Please copy env.ps1.proto to env.ps1 and set up your environment."
     Exit
 }
 
@@ -15,7 +15,7 @@ if (-not(Test-Path -Path $env -PathType Leaf)) {
 # -------------
 $vcvarsall = "$env:VCVARSALL_DIR\vcvarsall.bat"
 if (-not(Test-Path -Path $vcvarsall -PathType Leaf)) {
-    echo Unable to find vcvarsall.bat. Please verify the env.bat content.
+    Write-Output "Unable to find vcvarsall.bat. Please verify the env.bat content."
     Exit
 }
 
@@ -42,7 +42,7 @@ $PLATFORM_TOOLSET_FULL = $env:VCToolsVersion.Substring(0, 2) + $env:VCToolsVersi
 $inputDir = "$env:VCToolsRedistDir\$env:VSCMD_ARG_TGT_ARCH\Microsoft.VC$PLATFORM_TOOLSET_FULL.CRT"
 $files = "msvcp${PLATFORM_TOOLSET_LIGHT}.dll", "msvcp${PLATFORM_TOOLSET_LIGHT}_1.dll", "msvcp${PLATFORM_TOOLSET_LIGHT}_2.dll", "vcruntime${PLATFORM_TOOLSET_LIGHT}.dll", "vcruntime${PLATFORM_TOOLSET_LIGHT}_1.dll"
 foreach ( $file in $files ) {
-    copy -Force "$inputDir\$file" $DEPLOY_DIR
+    Copy-Item -Force "$inputDir\$file" $DEPLOY_DIR
 }
 
 # version update
@@ -86,14 +86,14 @@ if ($setup_version -ne $current_version) {
 # msbuild does not support building vdproj projects, falling back to devenv.com
 & devenv.com "$PSScriptRoot\setup\SCEP\SCEP.sln" /Rebuild "Release|Default"
 # rename and copy setup
-copy -Force "$PSScriptRoot\setup\SCEP\Release\SCEP.msi" "$PSScriptRoot\SCEP_${current_version}_${env:BUILD}.msi"
+Copy-Item -Force "$PSScriptRoot\setup\SCEP\Release\SCEP.msi" "$PSScriptRoot\SCEP_${current_version}_${env:BUILD}.msi"
 
 if ($final_warning) {
-    echo ""
-    echo ""
-    echo "WARNING: New SCEP version detected !!!"
-    echo "    ($setup_version --> $current_version)"
-    echo "    The version and the product code of the Windows Installer have been updated (see SCEP.vdproj)."
-    echo "    Please commit these changes with this release."
-    echo ""
+    Write-Output ""
+    Write-Output ""
+    Write-Output "WARNING: New SCEP version detected !!!"
+    Write-Output "    ($setup_version --> $current_version)"
+    Write-Output "    The version and the product code of the Windows Installer have been updated (see SCEP.vdproj)."
+    Write-Output "    Please commit these changes with this release."
+    Write-Output ""
 }
