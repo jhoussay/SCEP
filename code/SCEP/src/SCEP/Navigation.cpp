@@ -11,6 +11,10 @@
 #include <QThread>
 #include <QMutexLocker>
 #include <QWaitCondition>
+#include <QDeadlineTimer>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#include <QtWin>
+#endif
 //
 #include <shlobj_core.h>
 #include <shobjidl_core.h>
@@ -310,7 +314,12 @@ public:
 				{
 					if (result)
 					{
-						p_params->m_icon = QIcon(QPixmap::fromImage(QImage::fromHICON(info.hIcon)));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+						QPixmap pixmap = QPixmap::fromImage(QImage::fromHICON(info.hIcon));
+#else
+						QPixmap pixmap = QtWin::fromHICON(info.hIcon);
+#endif
+						p_params->m_icon = QIcon(pixmap);
 						DestroyIcon(info.hIcon);
 					}
 				}

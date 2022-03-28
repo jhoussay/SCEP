@@ -4,6 +4,9 @@ TEMPLATE = app
 
 # Other libs
 QT *= core gui widgets
+equals(QT_MAJOR_VERSION, 5) {
+   QT *= winextras
+}
 LIBS *= -lShlwapi -lUxTheme
 include(../third_parties/linkollector-win/linkollector-win.prf)
 
@@ -50,6 +53,3 @@ RC_ICONS = resources/SCEP.ico
 QMAKE_TARGET_DESCRIPTION = "SCEP is a multi tab file explorer for Windows."
 QMAKE_TARGET_PRODUCT = SCEP
 #QMAKE_TARGET_COPYRIGHT =
-
-
-

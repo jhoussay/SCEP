@@ -91,7 +91,7 @@ MainWindow::MainWindow(Theme* ptrTheme, QSettings* ptrSettings)
 	p_themeButtonGroup->addButton(p_darkThemeButton, (int) Theme::Style::Dark);
 	pThemeLayout->addWidget(p_darkThemeButton);
 	pThemeWidget->setLayout(pThemeLayout);
-	connect(p_themeButtonGroup, &QButtonGroup::idToggled, this, &MainWindow::styleChanged);
+	connect(p_themeButtonGroup, qOverload<int>(&QButtonGroup::buttonPressed), this, &MainWindow::styleChanged);
 	p_themeAction = new QWidgetAction(this);
 	p_themeAction->setDefaultWidget(pThemeWidget);
 

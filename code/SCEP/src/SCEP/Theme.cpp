@@ -7,6 +7,7 @@
 #include <QStyleFactory>
 #include <QPalette>
 #include <QPainter>
+#include <QtDebug>
 //
 #include <vector>
 //
