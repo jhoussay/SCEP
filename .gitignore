@@ -7,7 +7,7 @@
 /setup/SCEP/Debug/*
 /setup/SCEP/Release/*
 /tmp/*
-env.bat
+env.ps1
 *.sln
 *.vcxproj
 *.user
