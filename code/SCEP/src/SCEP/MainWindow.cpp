@@ -60,15 +60,15 @@ MainWindow::MainWindow(Theme* ptrTheme, QSettings* ptrSettings)
 
 	p_addTabAction = new QAction(tr("Add new tab"), this);
 	connect(p_addTabAction, SIGNAL(triggered()), this, SLOT(addNewTab()));
-	p_addTabAction->setShortcutContext(Qt::ApplicationShortcut);
-	p_addTabAction->setShortcut(Qt::CTRL | Qt::Key_T);
+//	p_addTabAction->setShortcutContext(Qt::ApplicationShortcut);
+//	p_addTabAction->setShortcut(Qt::CTRL | Qt::Key_T);
 	//QShortcut* pAddTabShortcut = new QShortcut(Qt::CTRL | Qt::Key_T, this, [this](){ this->addNewTab(); });
 	//pAddTabShortcut->setContext(Qt::ApplicationShortcut);
 
 	p_closeTabAction = new QAction(tr("Close current tab"), this);
 	connect(p_closeTabAction, SIGNAL(triggered()), this, SLOT(closeCurrentTab()));
-	p_closeTabAction->setShortcutContext(Qt::ApplicationShortcut);
-	p_closeTabAction->setShortcut(Qt::CTRL | Qt::Key_W);
+//	p_closeTabAction->setShortcutContext(Qt::ApplicationShortcut);
+//	p_closeTabAction->setShortcut(Qt::CTRL | Qt::Key_W);
 	//QShortcut* pCloseTabShortcut = new QShortcut(Qt::CTRL | Qt::Key_W, this, [this](){ this->closeCurrentTab(); });
 	//pCloseTabShortcut->setContext(Qt::ApplicationShortcut);
 

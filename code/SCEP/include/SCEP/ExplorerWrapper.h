@@ -18,7 +18,7 @@ class Theme;
  *	@ingroup				SCEP
  *	@brief					
  */
-class ExplorerWrapper : public QObject, public IServiceProvider, public IExplorerBrowserEvents
+class ExplorerWrapper : public QObject, public IServiceProvider, public IExplorerBrowserEvents, public IExplorerPaneVisibility
 {
 	Q_OBJECT
 
@@ -48,6 +48,9 @@ public:
 	IFACEMETHODIMP			OnNavigationComplete(PCIDLIST_ABSOLUTE pidlFolder) override;
 	IFACEMETHODIMP			OnNavigationFailed(PCIDLIST_ABSOLUTE pidlFolder) override;
 
+	// IExplorerPaneVisibility
+	HRESULT					GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE *peps);
+
 signals:
 	void					loading(const NavigationPath& path);
 	void					pathChanged(const NavigationPath& path, bool success);
@@ -58,12 +61,21 @@ private:
 	static INT_PTR CALLBACK	s_WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	INT_PTR					wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	ErrorPtr				onInitialize(const NavigationPath& path);
-	ErrorPtr				getSelectedItem(REFIID riid, void **ppv);
+	ErrorPtr				getSelectedItems(std::vector<IShellItem*>& shellItems);
 
 	static LRESULT CALLBACK	ShellWindowProcHook(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
-	HMENU					CreateCustomPopupMenu();
-	std::map<long, QString>	getContextMenuCustomOptions(const NavigationPath& contextMenuFocusedPath);
-	void					notifyContextMenuCustomOption(int iOption, const NavigationPath& contextMenuFocusedPath);
+
+	struct CustomMenu
+	{
+		HMENU						hmenu = nullptr;
+		IContextMenu*				pContextMenu = nullptr;
+		std::vector<NavigationPath>	contextMenuSelectedPaths;
+		IFolderView2*				pCurrentFolderView = nullptr;
+	};
+
+	std::optional<CustomMenu> CreateCustomPopupMenu();
+	std::map<long, QString>	getContextMenuCustomOptions(const std::vector<NavigationPath>& contextMenuSelectedPaths);
+	void					notifyContextMenuCustomOption(int iOption, const std::vector<NavigationPath>& contextMenuSelectedPaths);
 
 private:
 	Theme*					ptr_theme = nullptr;
@@ -78,8 +90,6 @@ private:
 
 	IShellView*				p_psv = nullptr;
 	WNDPROC					p_shellWindowProcOld = nullptr;
-	IContextMenu2*			p_contextMenu2 = nullptr;
-	NavigationPath			m_contextMenuFocusedPath;
 
 	std::optional<QDateTime> m_middleClickDateTime;
 };
