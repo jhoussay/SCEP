@@ -50,6 +50,7 @@ SCEP is released under MIT license.
 **Critical bugs:**
 - **Copy/Paste does not work (shortcut or context menu)**
 - **Rename with does not work, rename option not displayed in context menu**
+- **Keyboard shotcuts do not work: F2, DEL, CTRL+C, CTRL+V...**
 
 ### Towards SCEP 1.0
 
