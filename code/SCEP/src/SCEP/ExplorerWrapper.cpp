@@ -18,6 +18,9 @@
 #include <windowsx.h>
 #include <winuser.h>
 //
+#define MIN_SHELL_ID 1
+#define MAX_SHELL_ID 30000
+//
 inline RECT GetWindowRectInClient(HWND hwnd)
 {
 	RECT rc;
@@ -100,7 +103,7 @@ ErrorPtr ExplorerWrapper::initialize(const NavigationPath& path)
 	m_hwnd = CreateWindowEx(WS_EX_APPWINDOW,
 							sClassName,
 							L"SCEP Win32 Window",
-							WS_OVERLAPPEDWINDOW,
+							WS_OVERLAPPEDWINDOW /*| WS_CLIPCHILDREN | WS_CLIPSIBLINGS*/,
 							CW_USEDEFAULT,
 							CW_USEDEFAULT,
 							320,//640,
@@ -140,11 +143,10 @@ ErrorPtr ExplorerWrapper::setCurrentPath(const NavigationPath& path)
 {
 	CHECK(p_peb, "ExplorerWrapper::setCurrentPath() : No current instance.");
 
-	IShellItem* psi = CreateShellItem(path.internalPath());
+	Box<IShellItem> psi = CreateShellItem(path.internalPath());
 	if (psi)
 	{
-		HRESULT hr = p_peb->BrowseToObject(psi, 0);
-		psi->Release();
+		HRESULT hr = p_peb->BrowseToObject(psi.get(), 0);
 		CHECK(SUCCEEDED(hr), "Unable to set explorer current path \"" + path.displayPath() + "\" : " + GetLastErrorAsString());
 	}
 	else
@@ -165,11 +167,10 @@ ErrorPtr ExplorerWrapper::finalize()
 {
 	if (p_peb)
 	{
-		IUnknown_SetSite(p_peb, nullptr);
+		IUnknown_SetSite(p_peb.get(), nullptr);
 		p_peb->Unadvise(m_dwCookie);
 		p_peb->Destroy();
-		p_peb->Release();
-		p_peb = nullptr;
+		p_peb.clear();
 	}
 
 	if (m_hwnd != 0)
@@ -226,14 +227,13 @@ IFACEMETHODIMP ExplorerWrapper::OnViewCreated(IShellView * psv)
 	p_psv = psv;
 
 	// Get the corresponding window
-	HWND hwndshell;
-	HRESULT hr = psv->GetWindow(&hwndshell);
+	HRESULT hr = psv->GetWindow(&m_hwnd_sv);
 
 	// Hook the window : set the new window procedure and the corresponding user data
 	if (SUCCEEDED(hr))
 	{
-		SetWindowLongPtr(hwndshell, GWLP_USERDATA, (LONG_PTR) this);
-		p_shellWindowProcOld = (WNDPROC) SetWindowLongPtr(hwndshell, GWLP_WNDPROC, (LONG_PTR) ShellWindowProcHook);
+		SetWindowLongPtr(m_hwnd_sv, GWLP_USERDATA, (LONG_PTR) this);
+		p_shellWindowProcOld = (WNDPROC) SetWindowLongPtr(m_hwnd_sv, GWLP_WNDPROC, (LONG_PTR) ShellWindowProcHook);
 	}
 
 	return S_OK;
@@ -267,14 +267,90 @@ IFACEMETHODIMP ExplorerWrapper::OnNavigationFailed(PCIDLIST_ABSOLUTE pidlFolder)
 //
 HRESULT ExplorerWrapper::GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE *peps)
 {
-	//if (ep == EP_NavPane)
-	//{
-	//
-	//}
-	//*peps = EPS_DEFAULT_ON;
-	//*peps = EPS_INITIALSTATE | EPS_FORCE;
-	*peps = EPS_DEFAULT_OFF;
+//	using GUIDandString = std::pair<GUID, QString>;
+//	static std::vector<GUIDandString> eps = 
+//	{
+//		{ EP_NavPane, "EP_NavPane" },
+//		{ EP_Commands, "EP_Commands" },
+//		{ EP_Commands_Organize, "EP_Commands_Organize" },
+//		{ EP_Commands_View, "EP_Commands_View" },
+//		{ EP_DetailsPane, "EP_DetailsPane" },
+//		{ EP_PreviewPane, "EP_PreviewPane" },
+//		{ EP_QueryPane, "EP_QueryPane" },
+//		{ EP_AdvQueryPane, "EP_AdvQueryPane" },
+//		{ EP_StatusBar, "EP_StatusBar" },
+//		{ EP_Ribbon, "EP_Ribbon" },
+//	};
+//
+//	auto ite = std::find_if(eps.begin(), eps.end(), [ep](const GUIDandString& guidAndString) {return guidAndString.first == ep;} );
+//	assert(ite != eps.end());
+//	if (ite != eps.end())
+//	{
+//		qDebug() << ite->second;
+//	}
+
+	*peps = EPS_DONTCARE;
+	//*peps = EPS_DEFAULT_ON | EPS_INITIALSTATE | EPS_FORCE;
+	//*peps = EPS_DEFAULT_OFF | EPS_INITIALSTATE | EPS_FORCE;
+	//*peps = EPS_DEFAULT_OFF;
 	return S_OK;
+}
+//
+void ExplorerWrapper::rename()
+{
+	// Get current view on IFolderView2
+	Box<IFolderView2> pfv;
+	HRESULT hr = p_peb->GetCurrentView(IID_PPV_ARGS(&pfv));
+	CHECK_VOID(SUCCEEDED(hr), QString("Could not get current view : %1").arg(hr));
+
+	// Rename
+	hr = pfv->DoRename();
+	CHECK_VOID(SUCCEEDED(hr), QString("Could not start rename : ").arg(hr));
+}
+//
+void ExplorerWrapper::copy()
+{
+	invokeMenu("copy", MenuRequest::SelectedItems);
+}
+//
+void ExplorerWrapper::cut()
+{
+	invokeMenu("cut", MenuRequest::SelectedItems);
+}
+//
+void ExplorerWrapper::paste()
+{
+	invokeMenu("paste", MenuRequest::CurrentFolder);
+}
+//
+void ExplorerWrapper::del()
+{
+	invokeMenu("delete", MenuRequest::SelectedItems);
+}
+//
+void ExplorerWrapper::forceDel()
+{
+
+}
+//
+void ExplorerWrapper::selectAll()
+{
+
+}
+//
+void ExplorerWrapper::mkDir()
+{
+
+}
+//
+void ExplorerWrapper::undo()
+{
+	invokeMenu("undo", MenuRequest::CurrentFolder);
+}
+//
+void ExplorerWrapper::redo()
+{
+	invokeMenu("redo", MenuRequest::CurrentFolder);
 }
 //
 INT_PTR CALLBACK ExplorerWrapper::s_WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -306,6 +382,8 @@ INT_PTR CALLBACK ExplorerWrapper::s_WndProc(HWND hwnd, UINT uMsg, WPARAM wParam,
 //
 LRESULT CALLBACK ExplorerWrapper::wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	//qDebug() << "wndProc" << Qt::hex << uMsg;
+
 	INT_PTR iRet = 1; // default for all handled cases in switch below
 
 	switch (uMsg)
@@ -339,7 +417,7 @@ ErrorPtr ExplorerWrapper::onInitialize(const NavigationPath& path)
 
 	// Register
 	// note, SetSite(nullptr) happens in finalize()
-	IUnknown_SetSite(p_peb, static_cast<IServiceProvider*>(this));
+	IUnknown_SetSite(p_peb.get(), static_cast<IServiceProvider*>(this));
 
 	// Initialize IExplorerBrowser
 	FOLDERSETTINGS fs = {};
@@ -356,22 +434,34 @@ ErrorPtr ExplorerWrapper::onInitialize(const NavigationPath& path)
 	// Set initial path
 	CALL( setCurrentPath(path) );
 
+	// Trick to request all the panes
+	// https://microsoft.public.platformsdk.shell.narkive.com/eeyV7YsU/iexplorerpanevisibility-problems-in-vista
+	//QTimer::singleShot(0, [=]() {
+		WPARAM wparam = 0;
+		LPARAM lparam = (LPARAM) L"ShellState";
+		/*HRESULT*/ hr = SendMessage(m_hwnd_sv, WM_SETTINGCHANGE, wparam, lparam);
+		if (! SUCCEEDED(hr))
+		{
+			qWarning() << "Failed to send \"WM_SETTINGCHANGE\" message";
+		}
+	//});
+
 	return success();
 }
 //
-ErrorPtr ExplorerWrapper::getSelectedItems(std::vector<IShellItem*>& shellItems)
+ErrorPtr ExplorerWrapper::getSelectedItems(std::vector<Box<IShellItem>>& shellItems)
 {
 	// Check
 	shellItems.clear();
 	CHECK(p_peb && p_psv, "ExplorerWrapper::getSelectedItem() : No current instance.");
 
 	// Get current view on IFolderView2
-	IFolderView2* pfv = nullptr;
+	Box<IFolderView2> pfv = nullptr;
 	HRESULT hr = p_peb->GetCurrentView(IID_PPV_ARGS(&pfv));
-	CHECK(SUCCEEDED(hr), "Could not get current view : " + GetLastErrorAsString());
+	CHECK(SUCCEEDED(hr), QString("Could not get current view : %1").arg(hr));
 
 	// Get the current selection
-	IShellItemArray* pItemArray = nullptr;
+	Box<IShellItemArray> pItemArray;
 	hr = pfv->GetSelection(FALSE, &pItemArray);
 	if (SUCCEEDED(hr))
 	{
@@ -383,41 +473,33 @@ ErrorPtr ExplorerWrapper::getSelectedItems(std::vector<IShellItem*>& shellItems)
 
 			for (DWORD i = 0; (i < count) && SUCCEEDED(hr); i++)
 			{
-				hr = pItemArray->GetItemAt(i, shellItems.data()+i);
+				hr = pItemArray->GetItemAt(i, &shellItems[i]);
 			}
 		}
-		pItemArray->Release();
 	}
-	pfv->Release();
 
 	return success();
 }
-//
-#define MIN_SHELL_ID 1
-#define MAX_SHELL_ID 30000
 //
 LRESULT CALLBACK ExplorerWrapper::ShellWindowProcHook(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	ExplorerWrapper* pThis = (ExplorerWrapper*) GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
+	//qDebug() << "ShellWindowProcHook" << Qt::hex << uMsg;
+
 	switch (uMsg)
 	{
 	case WM_CONTEXTMENU:
 	{
-		// Request a custom menu
-		std::optional<CustomMenu> customMenuOpt = pThis->CreateCustomPopupMenu();
-		// Generate a context menu on the clicked item with additional custom entries
-		
+		// Request a custom menu -> Generate a context menu on the clicked item with additional custom entries
 		// If a custom menu is required, handle it
 		// Else, the regular menu will be shown with the "p_shellWindowProcOld" window procedure
-		if (customMenuOpt.has_value())
+		if (std::shared_ptr<CustomMenu> pCustomMenu = pThis->CreateCustomPopupMenu(MenuRequest::SelectedItems))
 		{
-			CustomMenu& customMenu = customMenuOpt.value();
-
 			// Show the context menu and get the selected item
 			HWND hwndshell;
 			pThis->p_psv->GetWindow(&hwndshell);
-			long shellId = TrackPopupMenu(	customMenu.hmenu,
+			long shellId = TrackPopupMenu(	pCustomMenu->hmenu,
 											TPM_RETURNCMD | TPM_LEFTALIGN,
 											GET_X_LPARAM(lParam),
 											GET_Y_LPARAM(lParam),
@@ -430,43 +512,43 @@ LRESULT CALLBACK ExplorerWrapper::ShellWindowProcHook(HWND hwnd, UINT uMsg, WPAR
 			{
 				// Get command string
 				CHAR str[MAX_PATH];
-				customMenu.pContextMenu->GetCommandString(shellId - MIN_SHELL_ID, GCS_VERBA, nullptr, str, MAX_PATH);
-				//qDebug() << QString(str);
+				HRESULT hr = pCustomMenu->pContextMenu->GetCommandString(shellId - MIN_SHELL_ID, GCS_VERBA, nullptr, str, MAX_PATH);
+				if (SUCCEEDED(hr))
+				{
+					//qDebug() << QString(str);
 
-				// If a rename is required, we have to force it : the InvokeCommand won't work...
-				if (QString(str) == "rename")
-				{
-					HRESULT hr = customMenu.pCurrentFolderView->DoRename();
-					if (! SUCCEEDED(hr))
+					// If a rename is required, we have to force it : the InvokeCommand won't work...
+					if (QString(str) == "rename")
 					{
-						qCritical() << "InvokeCommand (" << str << ") failed: " << hr;
+						hr = pCustomMenu->pCurrentFolderView->DoRename();
+						if (! SUCCEEDED(hr))
+						{
+							qCritical() << "InvokeCommand (" << str << ") failed: " << hr;
+						}
+					}
+					// Fortunately, all the other InvokeCommand cases seem to work
+					else
+					{
+						CMINVOKECOMMANDINFO ici;
+						ZeroMemory(&ici, sizeof(ici));
+						ici.cbSize = sizeof(CMINVOKECOMMANDINFO);
+						ici.lpVerb = MAKEINTRESOURCEA(shellId - MIN_SHELL_ID);
+						ici.nShow = SW_SHOWNORMAL;
+		
+						hr = pCustomMenu->pContextMenu->InvokeCommand(&ici);
+						if (! SUCCEEDED(hr))
+						{
+							qCritical() << "InvokeCommand (" << str << ") failed: " << hr;
+						}
 					}
 				}
-				// Fortunately, all the other InvokeCommand cases seem to work
-				else
-				{
-					CMINVOKECOMMANDINFO ici;
-					ZeroMemory(&ici, sizeof(ici));
-					ici.cbSize = sizeof(CMINVOKECOMMANDINFO);
-					ici.lpVerb = MAKEINTRESOURCEA(shellId - MIN_SHELL_ID);
-					ici.nShow = SW_SHOWNORMAL;
-		
-					HRESULT hr = customMenu.pContextMenu->InvokeCommand(&ici);
-					if (! SUCCEEDED(hr))
-					{
-						qCritical() << "InvokeCommand (" << str << ") failed: " << hr;
-					}
-				}
-		
 			}
 			// Handle a custom choice
 			else if (shellId > MAX_SHELL_ID)
 			{
-				pThis->notifyContextMenuCustomOption(shellId - MAX_SHELL_ID - 1,customMenu.contextMenuSelectedPaths);
+				pThis->notifyContextMenuCustomOption(shellId - MAX_SHELL_ID - 1, pCustomMenu->contextMenuSelectedPaths);
 			}
-			// Clean up
-			customMenu.pContextMenu->Release();
-			customMenu.pContextMenu = nullptr;
+
 
 			return 0; // handled
 		}
@@ -507,7 +589,7 @@ LRESULT CALLBACK ExplorerWrapper::ShellWindowProcHook(HWND hwnd, UINT uMsg, WPAR
 					if (middleClickDateTime.msecsTo(QDateTime::currentDateTime()) < DelayMs)
 					{
 						// Get the selected item
-						std::vector<IShellItem*> shellItems;
+						std::vector<Box<IShellItem>> shellItems;
 						ErrorPtr pError = pThis->getSelectedItems(shellItems);
 						if ( (! pError) && (shellItems.size() == 1) )
 						{
@@ -529,12 +611,6 @@ LRESULT CALLBACK ExplorerWrapper::ShellWindowProcHook(HWND hwnd, UINT uMsg, WPAR
 							if (pszName)
 								CoTaskMemFree(pszName);
 						}
-						// Clean up
-						for (IShellItem* psi : shellItems)
-						{
-							if (psi)
-								psi->Release();
-						}
 					}
 		
 					// Clean up
@@ -551,126 +627,122 @@ LRESULT CALLBACK ExplorerWrapper::ShellWindowProcHook(HWND hwnd, UINT uMsg, WPAR
 	return CallWindowProc(pThis->p_shellWindowProcOld, hwnd, uMsg, wParam, lParam);
 }
 //
-std::optional<ExplorerWrapper::CustomMenu> ExplorerWrapper::CreateCustomPopupMenu()
+std::shared_ptr<ExplorerWrapper::CustomMenu> ExplorerWrapper::CreateCustomPopupMenu(MenuRequest menuRequest)
 {
-	CustomMenu customMenu;
-
-	// Get the selected shell items
-	std::vector<IShellItem*> shellItems;
-	ErrorPtr pError = getSelectedItems(shellItems);
-	if (pError)
-	{
-		qCritical() << "ExplorerWrapper::CreateCustomPopupMenu: getSelectedItems(), pError: " << *pError;
-		return std::nullopt;
-	}
-
-	// No selected shell items -> the default menu will be OK !
-	if (shellItems.empty())
-	{
-		return std::nullopt;
-	}
+	std::shared_ptr<CustomMenu> pCustomMenu = std::make_shared<CustomMenu>();
 
 	// Get the current folder view
 	// The folder view has already been used in getSelectedItems()
-	IFolderView2 * ppifw = nullptr;
-	HRESULT hr = p_psv->QueryInterface(IID_IFolderView2, (void**) &ppifw);
+	pCustomMenu->pCurrentFolderView = nullptr;
+	HRESULT hr = p_peb->GetCurrentView(IID_PPV_ARGS(&pCustomMenu->pCurrentFolderView));
 	if (! SUCCEEDED(hr))
 	{
-		qCritical() << "ExplorerWrapper::CreateCustomPopupMenu: QueryInterface(), hr: " << hr;
-		return std::nullopt;
+		qCritical() << "ExplorerWrapper::CreateCustomPopupMenu: GetCurrentView(), hr: " << hr;
+		return nullptr;
 	}
-	customMenu.pCurrentFolderView = ppifw;
 
 	// Get the current shell folder
-	IShellFolder* ppshf = nullptr;
-	hr = ppifw->GetFolder(IID_PPV_ARGS(&ppshf));
+	Box<IShellFolder> ppshf = nullptr;
+	hr = pCustomMenu->pCurrentFolderView->GetFolder(IID_PPV_ARGS(&ppshf));
 	if (! SUCCEEDED(hr))
 	{
 		qCritical() << "ExplorerWrapper::CreateCustomPopupMenu: GetFolder(), hr: " << hr;
-		ppifw->Release();
-		return std::nullopt;
+		return nullptr;
 	}
 
 	// Get the current shell folder pidl
 	PIDLIST_ABSOLUTE ppidl;
-	hr = SHGetIDListFromObject(ppshf, &ppidl);
+	hr = SHGetIDListFromObject(ppshf.get(), &ppidl);
 	if (! SUCCEEDED(hr))
 	{
 		qCritical() << "ExplorerWrapper::CreateCustomPopupMenu: SHGetIDListFromObject(), hr: " << hr;
-		ppshf->Release();
-		ppifw->Release();
-		return std::nullopt;
+		return nullptr;
 	}
 
-	// Get the path and the relative pidl of the selected items
-	customMenu.contextMenuSelectedPaths.resize(shellItems.size());
-	std::vector<PITEMID_CHILD> ppidls(shellItems.size());
-	for (size_t i = 0; i < (shellItems.size()) && SUCCEEDED(hr); i++)
+	// Get the item(s) to process
+	std::vector<Box<IShellItem>> shellItems;
+	std::vector<PCITEMID_CHILD> ppidls;
+	// Mode == Selected Items ?
+	if (menuRequest == MenuRequest::SelectedItems)
 	{
-		PIDLIST_ABSOLUTE ppidl_tmp;
-		hr = SHGetIDListFromObject(shellItems[i], &ppidl_tmp);
-		customMenu.contextMenuSelectedPaths[i] = NavigationPath(ppidl_tmp);
-		ppidls[i] = ILFindLastID(ppidl_tmp);
-	}
-	if (! SUCCEEDED(hr))
-	{
-		qCritical() << "ExplorerWrapper::CreateCustomPopupMenu: SHGetIDListFromObject(), hr: " << hr;
-		for (IShellItem* psi : shellItems)
+		// Get the selected shell items
+		ErrorPtr pError = getSelectedItems(shellItems);
+		if (pError)
 		{
-			if (psi)
-				psi->Release();
+			qCritical() << "ExplorerWrapper::CreateCustomPopupMenu: getSelectedItems(), pError: " << *pError;
+			return nullptr;
 		}
-		ppshf->Release();
-		ppifw->Release();
-		return std::nullopt;
+		// No selected shell items ? then return
+		if (shellItems.empty())
+			return nullptr;
+
+		// Get the path and the relative pidl of the selected items
+		pCustomMenu->contextMenuSelectedPaths.resize(shellItems.size());
+		ppidls.resize(shellItems.size());
+		for (size_t i = 0; i < (shellItems.size()) && SUCCEEDED(hr); i++)
+		{
+			PIDLIST_ABSOLUTE ppidl_tmp;
+			hr = SHGetIDListFromObject(shellItems[i].get(), &ppidl_tmp);
+			pCustomMenu->contextMenuSelectedPaths[i] = NavigationPath(ppidl_tmp);
+			ppidls[i] = ILFindLastID(ppidl_tmp);
+		}
+		if (! SUCCEEDED(hr))
+		{
+			qCritical() << "ExplorerWrapper::CreateCustomPopupMenu: SHGetIDListFromObject(), hr: " << hr;
+			return nullptr;
+		}
+	}
+	// Mode == Current Folder
+	else
+	{
+		ppshf.clear();
+		ppidls.resize(1);
+		hr = SHBindToParent(ppidl, IID_PPV_ARGS(&ppshf), &ppidls[0]);
+		if (! SUCCEEDED(hr))
+		{
+			qCritical() << "ExplorerWrapper::CreateCustomPopupMenu: SHBindToParent(), hr: " << hr;
+			return nullptr;
+		}
 	}
 
 
-	// Create the context menu
-	customMenu.hmenu = CreatePopupMenu();
-	DEFCONTEXTMENU defContextMenu;
-	defContextMenu.hwnd = (HWND) customMenu.hmenu;
-	defContextMenu.pcmcb = nullptr; // IContextMenuCB
-	defContextMenu.pidlFolder = ppidl;
-	defContextMenu.psf = ppshf;
-	defContextMenu.cidl = (UINT) ppidls.size();
-	defContextMenu.apidl = (PCUITEMID_CHILD_ARRAY) ppidls.data();
-	defContextMenu.punkAssociationInfo = nullptr;
-	defContextMenu.cKeys = 0;
-	defContextMenu.aKeys = nullptr;
-	hr = SHCreateDefaultContextMenu(&defContextMenu, IID_PPV_ARGS(&customMenu.pContextMenu));
+//	// Create the context menu
+//	DEFCONTEXTMENU defContextMenu;
+//	defContextMenu.hwnd = nullptr;
+//	defContextMenu.pcmcb = nullptr; // IContextMenuCB
+//	defContextMenu.pidlFolder = ppidl;
+//	defContextMenu.psf = ppshf.get();
+//	defContextMenu.cidl = (UINT) ppidls.size();
+//	defContextMenu.apidl = (PCUITEMID_CHILD_ARRAY) ppidls.data();
+//	defContextMenu.punkAssociationInfo = nullptr;
+//	defContextMenu.cKeys = 0;
+//	defContextMenu.aKeys = nullptr;
+//	hr = SHCreateDefaultContextMenu(&defContextMenu, IID_PPV_ARGS(&pCustomMenu->pContextMenu));
+//	if (! SUCCEEDED(hr))
+//	{
+//		qCritical() << "ExplorerWrapper::CreateCustomPopupMenu: SHCreateDefaultContextMenu(), hr: " << hr;
+//		return nullptr;
+//	}
+
+	//hr = ppshf->CreateViewObject(nullptr, IID_PPV_ARGS(&pCustomMenu->pContextMenu));
+	hr = ppshf->GetUIObjectOf(nullptr, (UINT) ppidls.size(), (PCUITEMID_CHILD_ARRAY) ppidls.data(), IID_IContextMenu, nullptr, (void**)&pCustomMenu->pContextMenu);
 	if (! SUCCEEDED(hr))
 	{
 		qCritical() << "ExplorerWrapper::CreateCustomPopupMenu: GetUIObjectOf(), hr: " << hr;
-		for (IShellItem* psi : shellItems)
-		{
-			if (psi)
-				psi->Release();
-		}
-		ppshf->Release();
-		ppifw->Release();
-		return std::nullopt;
+		return nullptr;
 	}
 
 	// Query the menu
-	hr = customMenu.pContextMenu->QueryContextMenu(customMenu.hmenu, 0, MIN_SHELL_ID, MAX_SHELL_ID, /*CMF_EXPLORE*/CMF_NORMAL | CMF_CANRENAME);
+	pCustomMenu->hmenu = CreatePopupMenu();
+	hr = pCustomMenu->pContextMenu->QueryContextMenu(pCustomMenu->hmenu, 0, MIN_SHELL_ID, MAX_SHELL_ID, /*CMF_EXPLORE*/CMF_NORMAL | CMF_CANRENAME);
 	if (! SUCCEEDED(hr))
 	{
 		qCritical() << "ExplorerWrapper::CreateCustomPopupMenu: QueryContextMenu(), hr: " << hr;
-		customMenu.pContextMenu->Release();
-		customMenu.pContextMenu = nullptr;
-		for (IShellItem* psi : shellItems)
-		{
-			if (psi)
-				psi->Release();
-		}
-		ppshf->Release();
-		ppifw->Release();
-		return std::nullopt;
+		return nullptr;
 	}
 
 	// Add custom options to the menu
-	std::map<long, QString> mapReturn = getContextMenuCustomOptions(customMenu.contextMenuSelectedPaths);
+	std::map<long, QString> mapReturn = getContextMenuCustomOptions(pCustomMenu->contextMenuSelectedPaths);
 	if (! mapReturn.empty())
 	{
 		UINT position = 0;
@@ -680,22 +752,16 @@ std::optional<ExplorerWrapper::CustomMenu> ExplorerWrapper::CreateCustomPopupMen
 		{
 			long lOption = p->first;
 			std::wstring option = p->second.toStdWString();
-			ok = InsertMenu(customMenu.hmenu, position++, MF_BYPOSITION | MF_STRING, (UINT_PTR) MAX_SHELL_ID + lOption +1, option.c_str());
+			ok = InsertMenu(pCustomMenu->hmenu, position++, MF_BYPOSITION | MF_STRING, (UINT_PTR) MAX_SHELL_ID + lOption +1, option.c_str());
 		}
 	
-		ok = InsertMenu(customMenu.hmenu, position++, MF_BYPOSITION | MF_SEPARATOR, 0, nullptr);
+		ok = InsertMenu(pCustomMenu->hmenu, position++, MF_BYPOSITION | MF_SEPARATOR, 0, nullptr);
 	}
+	// TODO
+	//CoTaskMemFree(ppidl);
+	//CoTaskMemFree(ppidls[i]);
 
-	// Cleanup
-	for (IShellItem* psi : shellItems)
-	{
-		if (psi)
-			psi->Release();
-	}
-	ppshf->Release();
-	ppifw->Release();
-
-	return customMenu;
+	return pCustomMenu;
 }
 //
 std::map<long, QString> ExplorerWrapper::getContextMenuCustomOptions(const std::vector<NavigationPath>& contextMenuSelectedPaths)
@@ -726,6 +792,59 @@ void ExplorerWrapper::notifyContextMenuCustomOption([[maybe_unused]] int iOption
 		{
 			for (const NavigationPath& path : contextMenuSelectedPaths)
 				emit openNewTab(path, NewTabPosition::AfterCurrent, NewTabBehaviour::None);
+		}
+	}
+}
+//
+void ExplorerWrapper::invokeMenu(const QString& verb, MenuRequest menuRequest)
+{
+	if (std::shared_ptr<CustomMenu> pCustomMenu = CreateCustomPopupMenu(menuRequest))
+	{
+		CHAR str[MAX_PATH];
+
+		// Loop over menu elements
+		int count = GetMenuItemCount(pCustomMenu->hmenu);
+		for (int iMenuItem = 0; iMenuItem < count; iMenuItem++)
+		{
+			// Get shellId
+			UINT shellId = GetMenuItemID(pCustomMenu->hmenu, iMenuItem);
+			if ( (shellId < MIN_SHELL_ID) || (shellId > MAX_SHELL_ID))
+				continue;
+
+		// Show the context menu and get the selected item
+		//	HWND hwndshell;
+		//	p_psv->GetWindow(&hwndshell);
+		//	long shellId = TrackPopupMenu(	customMenu.hmenu,
+		//									TPM_RETURNCMD | TPM_LEFTALIGN,
+		//									0,
+		//									0,
+		//									0,
+		//									hwndshell, 
+		//									nullptr	);
+
+			// Get command string
+			HRESULT hr = pCustomMenu->pContextMenu->GetCommandString(shellId - MIN_SHELL_ID, /*GCS_VERBA*/GCS_HELPTEXTA, nullptr, str, MAX_PATH);
+			if (SUCCEEDED(hr))
+			{
+				qDebug() << QString(str);
+
+				// Process
+				if (QString(str) == verb)
+				{
+					CMINVOKECOMMANDINFO ici;
+					ZeroMemory(&ici, sizeof(ici));
+					ici.cbSize = sizeof(CMINVOKECOMMANDINFO);
+					ici.lpVerb = MAKEINTRESOURCEA(shellId - MIN_SHELL_ID);
+					ici.nShow = SW_SHOWNORMAL;
+				
+					hr = pCustomMenu->pContextMenu->InvokeCommand(&ici);
+					if (! SUCCEEDED(hr))
+					{
+						qCritical() << "InvokeCommand (" << str << ") failed: " << hr;
+					}
+					break;
+				}
+			}
 		}
 	}
 }

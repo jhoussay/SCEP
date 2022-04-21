@@ -67,7 +67,6 @@ ExplorerWidget::ExplorerWidget(Theme* ptrTheme, QWidget* pParent, Qt::WindowFlag
 	connect(p_wrapper, &ExplorerWrapper::loading, this, &ExplorerWidget::onLoading);
 	connect(p_wrapper, &ExplorerWrapper::pathChanged, this, &ExplorerWidget::onPathChanged);
 	connect(p_wrapper, &ExplorerWrapper::openNewTab, this, &ExplorerWidget::openNewTab);
-	connect(p_wrapper, &ExplorerWrapper::closed, this, &ExplorerWidget::closed);
 }
 //
 ExplorerWidget::~ExplorerWidget()
@@ -115,6 +114,91 @@ const NavigationPath& ExplorerWidget::currentPath() const
 
 		qWarning() << "Unitialized object";
 		return InvalidPath;
+	}
+}
+//
+void ExplorerWidget::rename()
+{
+	if (p_wrapper && (GetFocus() != (HWND) window()->winId()))
+	{
+		p_wrapper->rename();
+	}
+}
+//
+void ExplorerWidget::copy()
+{
+	if (p_wrapper && (GetFocus() != (HWND) window()->winId()))
+	{
+		p_wrapper->copy();
+	}
+}
+//
+void ExplorerWidget::cut()
+{
+	if (p_wrapper && (GetFocus() != (HWND) window()->winId()))
+	{
+		p_wrapper->cut();
+	}
+}
+//
+void ExplorerWidget::paste()
+{
+	if (p_wrapper && (GetFocus() != (HWND) window()->winId()))
+	{
+		p_wrapper->paste();
+	}
+}
+//
+void ExplorerWidget::showAddressBar()
+{
+	p_addressBar->show_address_field(true);
+}
+//
+void ExplorerWidget::del()
+{
+	if (p_wrapper && (GetFocus() != (HWND) window()->winId()))
+	{
+		p_wrapper->del();
+	}
+}
+//
+void ExplorerWidget::forceDel()
+{
+	if (p_wrapper && (GetFocus() != (HWND) window()->winId()))
+	{
+		p_wrapper->forceDel();
+	}
+}
+//
+void ExplorerWidget::selectAll()
+{
+	if (p_wrapper && (GetFocus() != (HWND) window()->winId()))
+	{
+		p_wrapper->selectAll();
+	}
+}
+//
+void ExplorerWidget::mkDir()
+{
+	if (p_wrapper && (GetFocus() != (HWND) window()->winId()))
+	{
+		p_wrapper->mkDir();
+	}
+}
+//
+void ExplorerWidget::undo()
+{
+	if (p_wrapper && (GetFocus() != (HWND) window()->winId()))
+	{
+		p_wrapper->undo();
+	}
+}
+//
+void ExplorerWidget::redo()
+{
+	if (p_wrapper && (GetFocus() != (HWND) window()->winId()))
+	{
+		p_wrapper->redo();
 	}
 }
 //
@@ -186,7 +270,7 @@ void ExplorerWidget::onLoading(const NavigationPath& path)
 //
 void ExplorerWidget::onPathChanged(const NavigationPath& path, bool success)
 {
-	// Process the path changed
+	// On success
 	if (success)
 	{
 		// Get current request
@@ -240,9 +324,10 @@ void ExplorerWidget::onPathChanged(const NavigationPath& path, bool success)
 		// - emit the "path changed" signal
 		emit pathChanged(path/*, success*/);
 	}
+	//  On failure
 	else
 	{
-		// On failure : preserve line address focus (if present) and inform the user
+		// Preserve line address focus (if present) and inform the user
 		p_addressBar->set_line_address_closeOnFocusOut(false);
 		QMessageBox::critical(this, tr("SCEP"), tr("Could not navigate to \"%1\"").arg(path.displayPath()));
 		p_addressBar->set_line_address_closeOnFocusOut(true);
@@ -257,3 +342,4 @@ void ExplorerWidget::onPathChanged(const NavigationPath& path, bool success)
 		navigateTo(request);
 	}
 }
+//

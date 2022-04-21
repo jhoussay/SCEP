@@ -44,12 +44,24 @@ signals:
 	void					loading(const NavigationPath& path);
 	void					pathChanged(const NavigationPath& path);
 	void					openNewTab(const NavigationPath& path, NewTabPosition position, NewTabBehaviour behaviour);
-	void					closed();
 
-protected slots:
+public slots:
+	void					rename();
+	void					copy();
+	void					cut();
+	void					paste();
+	void					showAddressBar();
+	void					del();
+	void					forceDel();
+	void					selectAll();
+	void					mkDir();
+	void					undo();
+	void					redo();
 	void					navigateBackward();
 	void					navigateForward();
 	void					navigateUp();
+
+protected slots:
 	void					navigateTo(const NavigationRequest& request);
 
 	void					onLoading(const NavigationPath& path);

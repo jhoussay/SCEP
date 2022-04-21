@@ -124,7 +124,7 @@ public:
 		////////////////
 
 		// Create an IKnownFolderManager instance
-		IKnownFolderManager* pkfm = nullptr;
+		Box<IKnownFolderManager> pkfm;
 		HRESULT hr = CoCreateInstance(CLSID_KnownFolderManager, nullptr,  CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pkfm));
 		if (SUCCEEDED(hr))
 		{
@@ -134,7 +134,7 @@ public:
 			hr = pkfm->GetFolderIds(&rgKFIDs, &cKFIDs);
 			if (SUCCEEDED(hr))
 			{
-				IKnownFolder *pkfCurrent = nullptr;
+				Box<IKnownFolder> pkfCurrent;
 				// Enumerate the known folders. rgKFIDs[i] has the KNOWNFOLDERID
 				for (UINT i = 0; i < cKFIDs; ++i)
 				{
@@ -190,11 +190,9 @@ public:
 							FreeKnownFolderDefinitionFields(&kfd);
 						}
 					}
-					pkfCurrent->Release();
 				}
 				CoTaskMemFree(rgKFIDs);
 			}
-			pkfm->Release();
 		}
 
 

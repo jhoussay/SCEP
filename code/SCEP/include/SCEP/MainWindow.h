@@ -13,6 +13,8 @@
 #include <optional>
 #endif //FRAMELESS
 //
+class ExplorerWidget;
+//
 class QAction;
 class QWidgetAction;
 class QToolButton;
@@ -61,13 +63,15 @@ private slots:
 
 	void			loading(const NavigationPath& path);
 	void			pathChanged(const NavigationPath& path);
-	void			tabClosed();
+
+	void			onHotKeyPressed(int hotKeyId);
 
 protected:
 	void			closeEvent(QCloseEvent* pEvent) override;
 	bool			eventFilter(QObject *obj, QEvent *event) override;
 
 private:
+	ExplorerWidget*	currentExplorerWidget();
 	void			closeTab(int tabIndex, bool closeAppIfNoRemainingTab = true);
 	void			updateIcons();
 	static QString	tabName(const NavigationPath& path);

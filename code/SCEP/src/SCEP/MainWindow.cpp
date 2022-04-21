@@ -1,6 +1,7 @@
 #include <SCEP/MainWindow.h>
 #include <SCEP/AboutDialog.h>
 #include <SCEP/ExplorerWidget.h>
+#include <SCEP/HotKey.h>
 //
 #include <ui_MainWindow.h>
 //
@@ -25,6 +26,25 @@ static const QString GeometryStr = "Geometry";
 static const QString StateStr = "State";
 static const QString TabsStr = "Tabs";
 static const QString CurrentTabStr = "CurrentTab";
+//
+static constexpr int Rename_id = 0;
+static constexpr int Copy_id = 1;
+static constexpr int Cut_id = 2;
+static constexpr int Paste_id = 3;
+static constexpr int Address_id = 4;
+static constexpr int Del_id = 5;
+static constexpr int SuperDel_id = 6;
+static constexpr int SelectAll_id = 7;
+static constexpr int CreateNewDir_id = 8;
+static constexpr int Up_id = 9;
+static constexpr int Backward_id = 10;
+static constexpr int Forward_id = 11;
+static constexpr int NewTab_id = 12;
+static constexpr int CloseTab_id = 13;
+static constexpr int NextTab_id = 14;
+static constexpr int PreviousTab_id = 15;
+static constexpr int Undo_id = 16;
+static constexpr int Redo_id = 17;
 //
 MainWindow::MainWindow(Theme* ptrTheme, QSettings* ptrSettings)
 	:	QMainWindow()
@@ -137,6 +157,34 @@ MainWindow::MainWindow(Theme* ptrTheme, QSettings* ptrSettings)
 	restoreGeometry(ptr_settings->value(GeometryStr).toByteArray());
 
 
+	// Hot keys
+	///////////
+
+	bool ok = true;
+	HotKeyManager* pHotKeyManager = HotKeyManager::createInstance();
+	connect(pHotKeyManager, &HotKeyManager::hotKeyPressed, this, &MainWindow::onHotKeyPressed);
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_F2 , Qt::KeyboardModifiers{}, Rename_id );
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_C , Qt::ControlModifier, Copy_id );
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_X , Qt::ControlModifier, Cut_id );
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_V , Qt::ControlModifier, Paste_id );
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_L , Qt::ControlModifier, Address_id );
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_Delete , Qt::KeyboardModifiers{}, Del_id );
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_Delete , Qt::ShiftModifier, SuperDel_id );
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_A , Qt::ControlModifier, SelectAll_id );
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_N, Qt::ControlModifier | Qt::ShiftModifier, CreateNewDir_id );
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_Up, Qt::AltModifier, Up_id);
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_Left, Qt::AltModifier, Backward_id);
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_Right, Qt::AltModifier, Forward_id);
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_T, Qt::ControlModifier, NewTab_id);
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_W, Qt::ControlModifier, CloseTab_id);
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_Tab, Qt::ControlModifier, NextTab_id);
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_Tab, Qt::ControlModifier | Qt::ShiftModifier, PreviousTab_id);
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_Z, Qt::ControlModifier, Undo_id);
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_Y, Qt::ControlModifier, Redo_id);
+	if (! ok)
+		qCritical() << "Error registering shortcuts.";
+	pHotKeyManager->startListenning();
+
 	// Tabs
 	///////
 
@@ -174,6 +222,8 @@ MainWindow::MainWindow(Theme* ptrTheme, QSettings* ptrSettings)
 //
 MainWindow::~MainWindow()
 {
+	HotKeyManager::deleteInstance();
+
 	ptr_settings->setValue(StateStr, saveState());
 	ptr_settings->setValue(GeometryStr, saveGeometry());
 	ptr_settings->sync();
@@ -251,7 +301,6 @@ void MainWindow::addNewTab(NavigationPath path, NewTabPosition position, NewTabB
 	connect(pExplorerWidget, &ExplorerWidget::loading, this, &MainWindow::loading);
 	connect(pExplorerWidget, &ExplorerWidget::pathChanged, this, &MainWindow::pathChanged);
 	connect(pExplorerWidget, &ExplorerWidget::openNewTab, this, &MainWindow::addNewTab);
-	connect(pExplorerWidget, &ExplorerWidget::closed, this, &MainWindow::tabClosed);
 	if (ErrorPtr pError = pExplorerWidget->init(path))
 	{
 		displayError(pError);
@@ -450,9 +499,125 @@ void MainWindow::pathChanged(const NavigationPath& path)
 	}
 }
 //
-void MainWindow::tabClosed()
+void MainWindow::onHotKeyPressed(int hotKeyId)
 {
-	// TODO
+	switch (hotKeyId)
+	{
+	case Rename_id:
+		qDebug() << "Rename hot key";
+		if (ExplorerWidget* pExplorerWidget = currentExplorerWidget())
+		{
+			pExplorerWidget->rename();
+		}
+		break;
+	case Copy_id:
+		qDebug() << "Copy hot key";
+		if (ExplorerWidget* pExplorerWidget = currentExplorerWidget())
+		{
+			pExplorerWidget->copy();
+		}
+		break;
+	case Cut_id:
+		qDebug() << "Cut hot key";
+		if (ExplorerWidget* pExplorerWidget = currentExplorerWidget())
+		{
+			pExplorerWidget->cut();
+		}
+		break;
+	case Paste_id:
+		qDebug() << "Paste hot key";
+		if (ExplorerWidget* pExplorerWidget = currentExplorerWidget())
+		{
+			pExplorerWidget->paste();
+		}
+		break;
+	case Address_id:
+		qDebug() << "Address hot key";
+		if (ExplorerWidget* pExplorerWidget = currentExplorerWidget())
+		{
+			pExplorerWidget->showAddressBar();
+		}
+		break;
+	case Del_id:
+		qDebug() << "Del hot key";
+		if (ExplorerWidget* pExplorerWidget = currentExplorerWidget())
+		{
+			pExplorerWidget->del();
+		}
+		break;
+	case SuperDel_id:
+		qDebug() << "SuperDel hot key";
+		if (ExplorerWidget* pExplorerWidget = currentExplorerWidget())
+		{
+			pExplorerWidget->forceDel();
+		}
+		break;
+	case SelectAll_id:
+		qDebug() << "SelectAll hot key";
+		if (ExplorerWidget* pExplorerWidget = currentExplorerWidget())
+		{
+			pExplorerWidget->selectAll();
+		}
+		break;
+	case CreateNewDir_id:
+		qDebug() << "CreateNewDir hot key";
+		if (ExplorerWidget* pExplorerWidget = currentExplorerWidget())
+		{
+			pExplorerWidget->mkDir();
+		}
+		break;
+	case Up_id:
+		qDebug() << "Up hot key";
+		if (ExplorerWidget* pExplorerWidget = currentExplorerWidget())
+		{
+			pExplorerWidget->navigateUp();
+		}
+		break;
+	case Backward_id:
+		qDebug() << "Backward hot key";
+		if (ExplorerWidget* pExplorerWidget = currentExplorerWidget())
+		{
+			pExplorerWidget->navigateBackward();
+		}
+		break;
+	case Forward_id:
+		qDebug() << "Forward hot key";
+		if (ExplorerWidget* pExplorerWidget = currentExplorerWidget())
+		{
+			pExplorerWidget->navigateForward();
+		}
+		break;
+	case NewTab_id:
+		qDebug() << "NewTab hot key";
+		addNewTab();
+		break;
+	case CloseTab_id:
+		qDebug() << "CloseTab hot key";
+		closeCurrentTab();
+		break;
+	case NextTab_id:
+		qDebug() << "NextTab hot key";
+		// TODO
+		break;
+	case PreviousTab_id:
+		qDebug() << "PreviousTab hot key";
+		// TODO
+		break;
+	case Undo_id:
+		qDebug() << "Undo hot key";
+		if (ExplorerWidget* pExplorerWidget = currentExplorerWidget())
+		{
+			pExplorerWidget->undo();
+		}
+		break;
+	case Redo_id:
+		qDebug() << "Redo hot key";
+		if (ExplorerWidget* pExplorerWidget = currentExplorerWidget())
+		{
+			pExplorerWidget->redo();
+		}
+		break;
+	}
 }
 //
 void MainWindow::closeEvent(QCloseEvent* pEvent)
@@ -500,6 +665,11 @@ bool MainWindow::eventFilter([[maybe_unused]] QObject *obj, QEvent *event)
 		}
 	}
 	return false;
+}
+//
+ExplorerWidget* MainWindow::currentExplorerWidget()
+{
+	return dynamic_cast<ExplorerWidget*>(p_ui->tabWidget->currentWidget());
 }
 //
 void MainWindow::closeTab(int tabIndex, bool closeAppIfNoRemainingTab)

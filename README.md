@@ -43,14 +43,21 @@ SCEP is released under MIT license.
 - Address bar with autocompletion and icons
 - Full support for translated paths (Users, Desktop, Documents... folders)
 - Full support for Windows Known Folders, including virtual folders (such as Network or Libraries)
+- Main hot keys handled :
+  - CTRL+C : copy
+  - CTRL+X : cut
+  - CTRL+V : paste
+  - F2 : rename
+  - CTRL+L : address bar focus
+  - DEL : delete
+  - ALT+UP : navigate up
+  - ALT+LEFT : navigate backward
+  - ALT+RIGHT : navigate forward
+  - CTRL+T : open new tab
+  - CTRL+W : close current tab
 - Full support for icons and icons overlays.
 - On startup, SCEP reopens the previous tabs
 - Windows installer
-
-**Critical bugs:**
-- **Copy/Paste does not work (shortcut or context menu)**
-- **Rename with does not work, rename option not displayed in context menu**
-- **Keyboard shotcuts do not work: F2, DEL, CTRL+C, CTRL+V...**
 
 ### Towards SCEP 1.0
 
@@ -58,15 +65,16 @@ Major missing features:
 - **Search**
 - I18N of the GUI and the installation program
 - Autoupdate (with https://github.com/VioletGiraffe/github-releases-autoupdater ?)
-- Shortcuts :
-  - CTRL+T: open new tab
-  - CTRL+W: close tab
-  - CTRL+L: edit address bar
-  - ALT+LEFT: navigate backward
-  - ALT+RIGHT: navigate forward
 
 
 Minor missing features:
+- Handle remaining hot keys :
+  - CTRL+Z : undo
+  - CTRL+Y : redo
+  - CTRL+A : select all
+  - CTRL+SHIFT+N : create new folder
+  - SHIFT+DEL : delete (without bin)
+- Handle navigation inside archives (zip) for breadcrumvs and address bars
 - Better CTRL-TAB behaviour
 - Tab context menu : close tab, duplicate tab, copy full path to clipboard, close other tabs...
 - Reopen closed tabs (and its shortcut CTRL+SHIFT+T)

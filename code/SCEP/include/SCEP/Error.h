@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 //
 #include <memory>
 //
@@ -34,3 +34,4 @@ inline bool isError(ErrorPtr pError)
 //
 #define CHECK(condition, error) { if (! (condition)) { return createError(error); } }
 //
+#define CHECK_VOID(condition, error) { if (! (condition)) { qCritical() << (error); } }
