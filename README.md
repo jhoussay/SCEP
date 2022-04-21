@@ -66,7 +66,6 @@ Major missing features:
 - I18N of the GUI and the installation program
 - Autoupdate (with https://github.com/VioletGiraffe/github-releases-autoupdater ?)
 
-
 Minor missing features:
 - Handle remaining hot keys :
   - CTRL+Z : undo
@@ -81,6 +80,7 @@ Minor missing features:
 - Add settings to allow hidden files and folders in breadcrumb bar address bar (linked to the file explorer equivalent setting ??)
 - Add history menu on backward / forward buttons
 - Middle click on backward / forward butttons opens a new tab
+- Middle click on breadcrumb button opens a new tab
 - Windows + Shift + E to set focus to a running SCEP instance and open a new tab
 
 Others :
@@ -88,7 +88,6 @@ Others :
 - CI/CD on GitHub
 
 Known bugs :
-- "&" character is not well handled in tab name
 - The light style palette does to perfectly match the Windows lighr palette.
 - Media addition or deletion is not handled in the breadcrumb bar
 

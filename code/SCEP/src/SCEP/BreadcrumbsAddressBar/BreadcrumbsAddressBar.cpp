@@ -479,7 +479,7 @@ void BreadcrumbsAddressBar::_insert_crumb(const NavigationPath& path)
 	btn->setPopupMode(QToolButton::MenuButtonPopup);
 	btn->setStyle(p_style_crumbs);
 	btn->setMouseTracking(true);
-	btn->setText(path.label());
+	btn->setText(path.label().replace("&", "&&"));
 	set_path_property(btn, path);
 	connect(btn, &StyledToolButton::clicked, this, &::BreadcrumbsAddressBar::requestSenderPathChange);
 	MenuListView* menu = new MenuListView(btn, ptr_theme);

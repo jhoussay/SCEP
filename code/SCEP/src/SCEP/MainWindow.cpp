@@ -701,7 +701,7 @@ void MainWindow::updateIcons()
 QString MainWindow::tabName(const NavigationPath& path)
 {
 	if (path.valid())
-		return path.label();
+		return path.label().replace("&", "&&");
 	else
 		return "Explorer";
 }
