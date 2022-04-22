@@ -423,6 +423,9 @@ ErrorPtr ExplorerWrapper::onInitialize(const NavigationPath& path)
 	FOLDERSETTINGS fs = {};
 	fs.ViewMode = FVM_AUTO;
 	fs.fFlags = FWF_AUTOARRANGE | FWF_NOWEBVIEW;
+	// FWF_CHECKSELECT : Turns on the check mode for the view.
+	// FWF_AUTOCHECKSELECT : Windows Vista and later. Items can be selected using checkboxes.
+	// FWF_USESEARCHFOLDER : Windows Vista and later. Use the search folder for stacking and searching.
 	hr = p_peb->Initialize(m_hwnd, &rc, &fs);
 	CHECK(SUCCEEDED(hr), "Could not initialize explorer browser : " + GetLastErrorAsString());
 	p_peb->SetOptions(EBO_SHOWFRAMES);
@@ -800,6 +803,7 @@ void ExplorerWrapper::invokeMenu(const QString& verb, MenuRequest menuRequest)
 {
 	if (std::shared_ptr<CustomMenu> pCustomMenu = CreateCustomPopupMenu(menuRequest))
 	{
+		bool found = false;
 		CHAR str[MAX_PATH];
 
 		// Loop over menu elements
@@ -823,10 +827,10 @@ void ExplorerWrapper::invokeMenu(const QString& verb, MenuRequest menuRequest)
 		//									nullptr	);
 
 			// Get command string
-			HRESULT hr = pCustomMenu->pContextMenu->GetCommandString(shellId - MIN_SHELL_ID, /*GCS_VERBA*/GCS_HELPTEXTA, nullptr, str, MAX_PATH);
+			HRESULT hr = pCustomMenu->pContextMenu->GetCommandString(shellId - MIN_SHELL_ID, GCS_VERBA, nullptr, str, MAX_PATH);
 			if (SUCCEEDED(hr))
 			{
-				qDebug() << QString(str);
+				//qDebug() << QString(str);
 
 				// Process
 				if (QString(str) == verb)
@@ -842,10 +846,20 @@ void ExplorerWrapper::invokeMenu(const QString& verb, MenuRequest menuRequest)
 					{
 						qCritical() << "InvokeCommand (" << str << ") failed: " << hr;
 					}
+					found = true;
 					break;
 				}
 			}
 		}
+
+		if (! found)
+		{
+			qDebug() << "Could not invoke" << verb << "command: no corresponding menu entry.";
+		}
+	}
+	else
+	{
+		qDebug() << "Could not invoke" << verb << "command: no context menu.";
 	}
 }
 //
