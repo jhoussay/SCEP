@@ -44,17 +44,22 @@ SCEP is released under MIT license.
 - Full support for translated paths (Users, Desktop, Documents... folders)
 - Full support for Windows Known Folders, including virtual folders (such as Network or Libraries)
 - Main hot keys handled :
+  - F2 : rename
+  - F5 : refresh
   - CTRL+C : copy
   - CTRL+X : cut
   - CTRL+V : paste
-  - F2 : rename
   - CTRL+L : address bar focus
+  - CTRL+T : open new tab
+  - CTRL+W : close current tab
+  - CTRL+Z : undo
+  - CTRL+Y : redo
+  - CTRL+A : select all
   - DEL : delete
+  - SHIFT+DEL : delete (without bin)
   - ALT+UP : navigate up
   - ALT+LEFT : navigate backward
   - ALT+RIGHT : navigate forward
-  - CTRL+T : open new tab
-  - CTRL+W : close current tab
 - Full support for icons and icons overlays.
 - On startup, SCEP reopens the previous tabs
 - Windows installer
@@ -68,11 +73,7 @@ Major missing features:
 
 Minor missing features:
 - Handle remaining hot keys :
-  - CTRL+Z : undo
-  - CTRL+Y : redo
-  - CTRL+A : select all
   - CTRL+SHIFT+N : create new folder
-  - SHIFT+DEL : delete (without bin)
 - Handle navigation inside archives (zip) for breadcrumvs and address bars
 - Better CTRL-TAB behaviour
 - Tab context menu : close tab, duplicate tab, copy full path to clipboard, close other tabs...

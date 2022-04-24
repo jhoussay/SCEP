@@ -22,5 +22,7 @@
         <file>SCEP/icons/right-48-light.png</file>
         <file>SCEP/icons/up-48-dark.png</file>
         <file>SCEP/icons/up-48-light.png</file>
+        <file>SCEP/icons/restart-48-dark.png</file>
+        <file>SCEP/icons/restart-48-light.png</file>
     </qresource>
 </RCC>

@@ -56,6 +56,12 @@ ExplorerWidget::ExplorerWidget(Theme* ptrTheme, QWidget* pParent, Qt::WindowFlag
 	connect(p_addressBar, &BreadcrumbsAddressBar::path_requested, this, &ExplorerWidget::setCurrentPath);
 	p_toolBar->addWidget(p_addressBar);
 
+	// Refresh button
+	p_refreshAction = new QAction(ptr_theme->icon(Theme::Icon::Refresh), tr("Refresh"), this);
+	p_refreshAction->setShortcut(Qt::Key_F5);
+	connect(p_refreshAction, &QAction::triggered, this, &ExplorerWidget::refresh);
+	p_toolBar->addAction(p_refreshAction);
+
 	// Menu bar
 	QVBoxLayout* pLayout = new QVBoxLayout(this);
 	pLayout->setContentsMargins(0, 0, 0, 0);
@@ -180,7 +186,7 @@ void ExplorerWidget::selectAll()
 //
 void ExplorerWidget::mkDir()
 {
-	if (p_wrapper && (GetFocus() != (HWND) window()->winId()))
+	if (p_wrapper)
 	{
 		p_wrapper->mkDir();
 	}
@@ -199,6 +205,14 @@ void ExplorerWidget::redo()
 	if (p_wrapper && (GetFocus() != (HWND) window()->winId()))
 	{
 		p_wrapper->redo();
+	}
+}
+//
+void ExplorerWidget::refresh()
+{
+	if (p_wrapper)
+	{
+		p_wrapper->refresh();
 	}
 }
 //

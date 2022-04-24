@@ -45,6 +45,7 @@ static constexpr int NextTab_id = 14;
 static constexpr int PreviousTab_id = 15;
 static constexpr int Undo_id = 16;
 static constexpr int Redo_id = 17;
+static constexpr int Refresh_id = 18;
 //
 MainWindow::MainWindow(Theme* ptrTheme, QSettings* ptrSettings)
 	:	QMainWindow()
@@ -163,14 +164,14 @@ MainWindow::MainWindow(Theme* ptrTheme, QSettings* ptrSettings)
 	bool ok = true;
 	HotKeyManager* pHotKeyManager = HotKeyManager::createInstance();
 	connect(pHotKeyManager, &HotKeyManager::hotKeyPressed, this, &MainWindow::onHotKeyPressed);
-	ok &= pHotKeyManager->registerHotKey(Qt::Key_F2 , Qt::KeyboardModifiers{}, Rename_id );
-	ok &= pHotKeyManager->registerHotKey(Qt::Key_C , Qt::ControlModifier, Copy_id );
-	ok &= pHotKeyManager->registerHotKey(Qt::Key_X , Qt::ControlModifier, Cut_id );
-	ok &= pHotKeyManager->registerHotKey(Qt::Key_V , Qt::ControlModifier, Paste_id );
-	ok &= pHotKeyManager->registerHotKey(Qt::Key_L , Qt::ControlModifier, Address_id );
-	ok &= pHotKeyManager->registerHotKey(Qt::Key_Delete , Qt::KeyboardModifiers{}, Del_id );
-	ok &= pHotKeyManager->registerHotKey(Qt::Key_Delete , Qt::ShiftModifier, SuperDel_id );
-	ok &= pHotKeyManager->registerHotKey(Qt::Key_A , Qt::ControlModifier, SelectAll_id );
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_F2, Qt::KeyboardModifiers{}, Rename_id );
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_C, Qt::ControlModifier, Copy_id );
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_X, Qt::ControlModifier, Cut_id );
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_V, Qt::ControlModifier, Paste_id );
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_L, Qt::ControlModifier, Address_id );
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_Delete, Qt::KeyboardModifiers{}, Del_id );
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_Delete, Qt::ShiftModifier, SuperDel_id );
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_A, Qt::ControlModifier, SelectAll_id );
 	ok &= pHotKeyManager->registerHotKey(Qt::Key_N, Qt::ControlModifier | Qt::ShiftModifier, CreateNewDir_id );
 	ok &= pHotKeyManager->registerHotKey(Qt::Key_Up, Qt::AltModifier, Up_id);
 	ok &= pHotKeyManager->registerHotKey(Qt::Key_Left, Qt::AltModifier, Backward_id);
@@ -181,6 +182,7 @@ MainWindow::MainWindow(Theme* ptrTheme, QSettings* ptrSettings)
 	ok &= pHotKeyManager->registerHotKey(Qt::Key_Tab, Qt::ControlModifier | Qt::ShiftModifier, PreviousTab_id);
 	ok &= pHotKeyManager->registerHotKey(Qt::Key_Z, Qt::ControlModifier, Undo_id);
 	ok &= pHotKeyManager->registerHotKey(Qt::Key_Y, Qt::ControlModifier, Redo_id);
+	ok &= pHotKeyManager->registerHotKey(Qt::Key_F5, Qt::KeyboardModifiers{}, Refresh_id);
 	if (! ok)
 		qCritical() << "Error registering shortcuts.";
 	pHotKeyManager->startListenning();
@@ -615,6 +617,13 @@ void MainWindow::onHotKeyPressed(int hotKeyId)
 		if (ExplorerWidget* pExplorerWidget = currentExplorerWidget())
 		{
 			pExplorerWidget->redo();
+		}
+		break;
+	case Refresh_id:
+		qDebug() << "Refresh hot key";
+		if (ExplorerWidget* pExplorerWidget = currentExplorerWidget())
+		{
+			pExplorerWidget->refresh();
 		}
 		break;
 	}

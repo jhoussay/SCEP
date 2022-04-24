@@ -59,6 +59,32 @@ inline IShellItem* CreateShellItem(const QString& path)
 	return nullptr;
 }
 //
+void simulateHotKey(IShellView* pSV, const std::initializer_list<SHORT>& vkeys)
+{
+	// Common
+	MSG msg;
+	msg.hwnd = 0;
+	msg.lParam = 0;
+	msg.time = 0;
+	msg.pt = {0, 0};
+
+	// Pressing keys
+	msg.message = WM_KEYDOWN;
+	for (SHORT vkey : vkeys)
+	{
+		msg.wParam = vkey;
+		pSV->TranslateAccelerator(&msg);
+	}
+
+	// Releasing keys
+	msg.message = WM_KEYUP;
+	for (SHORT vkey : vkeys)
+	{
+		msg.wParam = vkey;
+		pSV->TranslateAccelerator(&msg);
+	}
+}
+//
 //
 //
 ExplorerWrapper::ExplorerWrapper(Theme* ptrTheme, QObject* pParent)
@@ -188,7 +214,7 @@ IFACEMETHODIMP ExplorerWrapper::QueryInterface(REFIID riid, void **ppv)
 	{
 		QITABENT(ExplorerWrapper, IServiceProvider),
 		QITABENT(ExplorerWrapper, IExplorerBrowserEvents),
-		QITABENT(ExplorerWrapper, IExplorerPaneVisibility),
+	//	QITABENT(ExplorerWrapper, IExplorerPaneVisibility),
 		{ 0 },
 	};
 	return QISearch(this, qit, riid, ppv);
@@ -214,7 +240,7 @@ IFACEMETHODIMP ExplorerWrapper::QueryService(REFGUID guidService, REFIID riid, v
 	*ppv = NULL;
 
 	HRESULT hr = E_NOINTERFACE;
-	if ( (guidService == SID_SExplorerBrowserFrame) || (guidService == SID_ExplorerPaneVisibility) )
+	if ( (guidService == SID_SExplorerBrowserFrame) /*|| (guidService == SID_ExplorerPaneVisibility)*/ )
 	{
 		hr = QueryInterface(riid, ppv);
 	}
@@ -265,92 +291,105 @@ IFACEMETHODIMP ExplorerWrapper::OnNavigationFailed(PCIDLIST_ABSOLUTE pidlFolder)
 	return S_OK;
 }
 //
-HRESULT ExplorerWrapper::GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE *peps)
-{
-//	using GUIDandString = std::pair<GUID, QString>;
-//	static std::vector<GUIDandString> eps = 
-//	{
-//		{ EP_NavPane, "EP_NavPane" },
-//		{ EP_Commands, "EP_Commands" },
-//		{ EP_Commands_Organize, "EP_Commands_Organize" },
-//		{ EP_Commands_View, "EP_Commands_View" },
-//		{ EP_DetailsPane, "EP_DetailsPane" },
-//		{ EP_PreviewPane, "EP_PreviewPane" },
-//		{ EP_QueryPane, "EP_QueryPane" },
-//		{ EP_AdvQueryPane, "EP_AdvQueryPane" },
-//		{ EP_StatusBar, "EP_StatusBar" },
-//		{ EP_Ribbon, "EP_Ribbon" },
-//	};
+//HRESULT ExplorerWrapper::GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE *peps)
+//{
+////	using GUIDandString = std::pair<GUID, QString>;
+////	static std::vector<GUIDandString> eps = 
+////	{
+////		{ EP_NavPane, "EP_NavPane" },
+////		{ EP_Commands, "EP_Commands" },
+////		{ EP_Commands_Organize, "EP_Commands_Organize" },
+////		{ EP_Commands_View, "EP_Commands_View" },
+////		{ EP_DetailsPane, "EP_DetailsPane" },
+////		{ EP_PreviewPane, "EP_PreviewPane" },
+////		{ EP_QueryPane, "EP_QueryPane" },
+////		{ EP_AdvQueryPane, "EP_AdvQueryPane" },
+////		{ EP_StatusBar, "EP_StatusBar" },
+////		{ EP_Ribbon, "EP_Ribbon" },
+////	};
+////
+////	auto ite = std::find_if(eps.begin(), eps.end(), [ep](const GUIDandString& guidAndString) {return guidAndString.first == ep;} );
+////	assert(ite != eps.end());
+////	if (ite != eps.end())
+////	{
+////		qDebug() << ite->second;
+////	}
 //
-//	auto ite = std::find_if(eps.begin(), eps.end(), [ep](const GUIDandString& guidAndString) {return guidAndString.first == ep;} );
-//	assert(ite != eps.end());
-//	if (ite != eps.end())
-//	{
-//		qDebug() << ite->second;
-//	}
-
-	*peps = EPS_DONTCARE;
-	//*peps = EPS_DEFAULT_ON | EPS_INITIALSTATE | EPS_FORCE;
-	//*peps = EPS_DEFAULT_OFF | EPS_INITIALSTATE | EPS_FORCE;
-	//*peps = EPS_DEFAULT_OFF;
-	return S_OK;
-}
+//	*peps = EPS_DONTCARE;
+//	//*peps = EPS_DEFAULT_ON | EPS_INITIALSTATE | EPS_FORCE;
+//	//*peps = EPS_DEFAULT_OFF | EPS_INITIALSTATE | EPS_FORCE;
+//	//*peps = EPS_DEFAULT_OFF;
+//	return S_OK;
+//}
 //
 void ExplorerWrapper::rename()
 {
-	// Get current view on IFolderView2
-	Box<IFolderView2> pfv;
-	HRESULT hr = p_peb->GetCurrentView(IID_PPV_ARGS(&pfv));
-	CHECK_VOID(SUCCEEDED(hr), QString("Could not get current view : %1").arg(hr));
-
-	// Rename
-	hr = pfv->DoRename();
-	CHECK_VOID(SUCCEEDED(hr), QString("Could not start rename : ").arg(hr));
+	simulateHotKey(p_psv, {VK_F2});
+	SetFocus(m_hwnd_sv);
 }
 //
 void ExplorerWrapper::copy()
 {
-	invokeMenu("copy", MenuRequest::SelectedItems);
+	simulateHotKey(p_psv, {VK_CONTROL, 0x43/*C*/});
+	SetFocus(m_hwnd_sv);
 }
 //
 void ExplorerWrapper::cut()
 {
-	invokeMenu("cut", MenuRequest::SelectedItems);
+	simulateHotKey(p_psv, {VK_CONTROL, 0x58/*X*/});
+	SetFocus(m_hwnd_sv);
 }
 //
 void ExplorerWrapper::paste()
 {
-	invokeMenu("paste", MenuRequest::CurrentFolder);
+	simulateHotKey(p_psv, {VK_CONTROL, 0x56/*V*/});
+	SetFocus(m_hwnd_sv);
 }
 //
 void ExplorerWrapper::del()
 {
-	invokeMenu("delete", MenuRequest::SelectedItems);
+	simulateHotKey(p_psv, {VK_DELETE});
+	SetFocus(m_hwnd_sv);
 }
 //
 void ExplorerWrapper::forceDel()
 {
-
+	simulateHotKey(p_psv, {VK_SHIFT, VK_DELETE});
+	SetFocus(m_hwnd_sv);
 }
 //
 void ExplorerWrapper::selectAll()
 {
-
+	simulateHotKey(p_psv, {VK_CONTROL, 0x41/*A*/});
+	SetFocus(m_hwnd_sv);
 }
 //
 void ExplorerWrapper::mkDir()
 {
-
+	simulateHotKey(p_psv, {VK_CONTROL, VK_SHIFT, 0x4E/*N*/});
+	SetFocus(m_hwnd_sv);
 }
 //
 void ExplorerWrapper::undo()
 {
-	invokeMenu("undo", MenuRequest::CurrentFolder);
+	simulateHotKey(p_psv, {VK_CONTROL, 0x5A/*Z*/});
+	SetFocus(m_hwnd_sv);
 }
 //
 void ExplorerWrapper::redo()
 {
-	invokeMenu("redo", MenuRequest::CurrentFolder);
+	simulateHotKey(p_psv, {VK_CONTROL, 0x59/*Y*/});
+	SetFocus(m_hwnd_sv);
+}
+//
+void ExplorerWrapper::refresh()
+{
+	if (p_psv)
+	{
+		HRESULT hr = p_psv->Refresh();
+		CHECK_VOID(SUCCEEDED(hr), QString("Could not refresh : ").arg(hr));
+	}
+	SetFocus(m_hwnd_sv);
 }
 //
 INT_PTR CALLBACK ExplorerWrapper::s_WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -437,17 +476,17 @@ ErrorPtr ExplorerWrapper::onInitialize(const NavigationPath& path)
 	// Set initial path
 	CALL( setCurrentPath(path) );
 
-	// Trick to request all the panes
-	// https://microsoft.public.platformsdk.shell.narkive.com/eeyV7YsU/iexplorerpanevisibility-problems-in-vista
-	//QTimer::singleShot(0, [=]() {
-		WPARAM wparam = 0;
-		LPARAM lparam = (LPARAM) L"ShellState";
-		/*HRESULT*/ hr = SendMessage(m_hwnd_sv, WM_SETTINGCHANGE, wparam, lparam);
-		if (! SUCCEEDED(hr))
-		{
-			qWarning() << "Failed to send \"WM_SETTINGCHANGE\" message";
-		}
-	//});
+//	// Trick to request all the panes
+//	// https://microsoft.public.platformsdk.shell.narkive.com/eeyV7YsU/iexplorerpanevisibility-problems-in-vista
+//	//QTimer::singleShot(0, [=]() {
+//		WPARAM wparam = 0;
+//		LPARAM lparam = (LPARAM) L"ShellState";
+//		/*HRESULT*/ hr = SendMessage(m_hwnd_sv, WM_SETTINGCHANGE, wparam, lparam);
+//		if (! SUCCEEDED(hr))
+//		{
+//			qWarning() << "Failed to send \"WM_SETTINGCHANGE\" message";
+//		}
+//	//});
 
 	return success();
 }
@@ -487,6 +526,11 @@ ErrorPtr ExplorerWrapper::getSelectedItems(std::vector<Box<IShellItem>>& shellIt
 LRESULT CALLBACK ExplorerWrapper::ShellWindowProcHook(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	ExplorerWrapper* pThis = (ExplorerWrapper*) GetWindowLongPtr(hwnd, GWLP_USERDATA);
+	if (! pThis->p_psv)
+	{
+		qCritical() << "ExplorerWrapper::ShellWindowProcHook: Invalid shell view";
+		return CallWindowProc(pThis->p_shellWindowProcOld, hwnd, uMsg, wParam, lParam);
+	}
 
 	//qDebug() << "ShellWindowProcHook" << Qt::hex << uMsg;
 
@@ -796,70 +840,6 @@ void ExplorerWrapper::notifyContextMenuCustomOption([[maybe_unused]] int iOption
 			for (const NavigationPath& path : contextMenuSelectedPaths)
 				emit openNewTab(path, NewTabPosition::AfterCurrent, NewTabBehaviour::None);
 		}
-	}
-}
-//
-void ExplorerWrapper::invokeMenu(const QString& verb, MenuRequest menuRequest)
-{
-	if (std::shared_ptr<CustomMenu> pCustomMenu = CreateCustomPopupMenu(menuRequest))
-	{
-		bool found = false;
-		CHAR str[MAX_PATH];
-
-		// Loop over menu elements
-		int count = GetMenuItemCount(pCustomMenu->hmenu);
-		for (int iMenuItem = 0; iMenuItem < count; iMenuItem++)
-		{
-			// Get shellId
-			UINT shellId = GetMenuItemID(pCustomMenu->hmenu, iMenuItem);
-			if ( (shellId < MIN_SHELL_ID) || (shellId > MAX_SHELL_ID))
-				continue;
-
-		// Show the context menu and get the selected item
-		//	HWND hwndshell;
-		//	p_psv->GetWindow(&hwndshell);
-		//	long shellId = TrackPopupMenu(	customMenu.hmenu,
-		//									TPM_RETURNCMD | TPM_LEFTALIGN,
-		//									0,
-		//									0,
-		//									0,
-		//									hwndshell, 
-		//									nullptr	);
-
-			// Get command string
-			HRESULT hr = pCustomMenu->pContextMenu->GetCommandString(shellId - MIN_SHELL_ID, GCS_VERBA, nullptr, str, MAX_PATH);
-			if (SUCCEEDED(hr))
-			{
-				//qDebug() << QString(str);
-
-				// Process
-				if (QString(str) == verb)
-				{
-					CMINVOKECOMMANDINFO ici;
-					ZeroMemory(&ici, sizeof(ici));
-					ici.cbSize = sizeof(CMINVOKECOMMANDINFO);
-					ici.lpVerb = MAKEINTRESOURCEA(shellId - MIN_SHELL_ID);
-					ici.nShow = SW_SHOWNORMAL;
-				
-					hr = pCustomMenu->pContextMenu->InvokeCommand(&ici);
-					if (! SUCCEEDED(hr))
-					{
-						qCritical() << "InvokeCommand (" << str << ") failed: " << hr;
-					}
-					found = true;
-					break;
-				}
-			}
-		}
-
-		if (! found)
-		{
-			qDebug() << "Could not invoke" << verb << "command: no corresponding menu entry.";
-		}
-	}
-	else
-	{
-		qDebug() << "Could not invoke" << verb << "command: no context menu.";
 	}
 }
 //

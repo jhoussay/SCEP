@@ -57,6 +57,7 @@ public slots:
 	void					mkDir();
 	void					undo();
 	void					redo();
+	void					refresh();
 	void					navigateBackward();
 	void					navigateForward();
 	void					navigateUp();
@@ -77,6 +78,7 @@ private:
 //	QMenu*					p_forwardMenu		=	nullptr;	//!< Navigate forward action menu
 	QAction*				p_parentAction		=	nullptr;	//!< Navigate to parent folder action
 	BreadcrumbsAddressBar*	p_addressBar		=	nullptr;	//!< Address bar widget
+	QAction*				p_refreshAction		=	nullptr;	//!< Refresh action
 	QToolBar*				p_toolBar			=	nullptr;	//!< ToolBar containing navigation buttons and address bar
 
 	std::queue<NavigationRequest>	m_pendingRequests	=	{};	//!< Navigation pathes requested but not processed yet

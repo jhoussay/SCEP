@@ -42,7 +42,8 @@ public:
 		Left,			//!< Left arrow
 		Right,			//!< Right arrow
 		Chevron_Left,	//!< Left chevron
-		Chevron_Right	//!< Right chevron
+		Chevron_Right,	//!< Right chevron
+		Refresh			//!< Refresh
 	};
 
 public:

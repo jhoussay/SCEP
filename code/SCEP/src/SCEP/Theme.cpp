@@ -109,7 +109,8 @@ Theme::Theme(QSettings* pSettings)
 		{Icon::Left,			":/SCEP/icons/left-48-%1.png"},
 		{Icon::Right,			":/SCEP/icons/right-48-%1.png"},
 		{Icon::Chevron_Left,	":/SCEP/icons/chevron-left-48-%1.png"},
-		{Icon::Chevron_Right,	":/SCEP/icons/chevron-right-48-%1.png"}
+		{Icon::Chevron_Right,	":/SCEP/icons/chevron-right-48-%1.png"},
+		{Icon::Refresh,			":/SCEP/icons/restart-48-%1.png"}
 	};
 
 

@@ -19,7 +19,7 @@ class Theme;
  *	@ingroup				SCEP
  *	@brief					
  */
-class ExplorerWrapper : public QObject, public IServiceProvider, public IExplorerBrowserEvents, public IExplorerPaneVisibility
+class ExplorerWrapper : public QObject, public IServiceProvider, public IExplorerBrowserEvents//, public IExplorerPaneVisibility
 {
 	Q_OBJECT
 
@@ -50,7 +50,7 @@ public:
 	IFACEMETHODIMP			OnNavigationFailed(PCIDLIST_ABSOLUTE pidlFolder) override;
 
 	// IExplorerPaneVisibility
-	HRESULT					GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE *peps) override;
+//	HRESULT					GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE *peps) override;
 
 public slots:
 	void					rename();
@@ -63,6 +63,7 @@ public slots:
 	void					mkDir();
 	void					undo();
 	void					redo();
+	void					refresh();
 
 signals:
 	void					loading(const NavigationPath& path);
@@ -102,8 +103,6 @@ private:
 	std::shared_ptr<CustomMenu> CreateCustomPopupMenu(MenuRequest menuRequest);
 	std::map<long, QString>	getContextMenuCustomOptions(const std::vector<NavigationPath>& contextMenuSelectedPaths);
 	void					notifyContextMenuCustomOption(int iOption, const std::vector<NavigationPath>& contextMenuSelectedPaths);
-
-	void					invokeMenu(const QString& verb, MenuRequest menuRequest);
 
 private:
 	Theme*					ptr_theme = nullptr;
