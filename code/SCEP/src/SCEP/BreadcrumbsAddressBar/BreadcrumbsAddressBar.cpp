@@ -25,6 +25,7 @@
 #include <QDesktopServices>
 #include <QClipboard>
 #include <QMimeData>
+#include <QFileInfo>
 #include <QtDebug>
 //
 #include <windows.h>

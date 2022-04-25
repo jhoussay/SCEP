@@ -259,17 +259,13 @@ public:
 //
 //
 //
-#define HICON_IN_BACKGROUND_THREAD 1
-// 
-#if HICON_IN_BACKGROUND_THREAD == 1
-//
 struct GetIconBackgroundoParams
 {
-	GetIconBackgroundoParams(const QString &ip)
-		: m_internalPath(ip)
+	GetIconBackgroundoParams(const NavigationPath& path)
+		: m_path(path)
 	{}
 
-	const QString& m_internalPath;
+	const NavigationPath& m_path;
 	QIcon m_icon;
 };
 //
@@ -294,19 +290,34 @@ public:
 
 			if (p_params)
 			{
-				bool result = false;
-				SHFILEINFO info;
+				// Note : SHGFI_ADDOVERLAYS works and gives the good icon
+				// BUT it makes the IExplorerBrowser fail to add overlays (TortoiseGit, OneDrive...)
+				// So we can't use it here
+				static constexpr unsigned int flags = SHGFI_ICON | SHGFI_SMALLICON ;//| SHGFI_ADDOVERLAYS;
 
-				PIDLIST_ABSOLUTE pidl = nullptr;
-				std::wstring wpath = p_params->m_internalPath.toStdWString();
-				HRESULT hr = SHParseDisplayName(wpath.c_str(), 0, &pidl, 0, 0);
-				if (SUCCEEDED(hr))
+				std::wstring wpath = p_params->m_path.internalPath().toStdWString();
+				SHFILEINFO info;
+				memset(&info, 0, sizeof(SHFILEINFO));
+				bool result = false;
+
+				// Virtual folder
+				if (p_params->m_path.isVirtualFolder())
 				{
-					unsigned int flags = SHGFI_ICON | SHGFI_SMALLICON | SHGFI_SYSICONINDEX | SHGFI_ADDOVERLAYS | SHGFI_OVERLAYINDEX;
-					result = SHGetFileInfo((LPCWSTR) pidl, -1, &info, sizeof(SHFILEINFO), SHGFI_PIDL | flags);
-					CoTaskMemFree(pidl);
+					PIDLIST_ABSOLUTE pidl = nullptr;
+					HRESULT hr = SHParseDisplayName(wpath.c_str(), 0, &pidl, 0, 0);
+					if (SUCCEEDED(hr))
+					{
+						result = SHGetFileInfo((LPCWSTR) pidl, -1, &info, sizeof(SHFILEINFO), SHGFI_PIDL | flags);
+						CoTaskMemFree(pidl);
+					}
+				}
+				// Sys path
+				else
+				{
+					result = SHGetFileInfo(wpath.c_str(), -1, &info, sizeof(SHFILEINFO), flags);
 				}
 
+				// End
 				m_doneMutex.lock();
 				if (! m_cancelled.loadRelaxed())
 				{
@@ -359,7 +370,7 @@ private:
 	QMutex m_doneMutex;
 };
 //
-static QIcon GetIconBackground(const QString& internalName)
+static QIcon GetIconBackground(const NavigationPath& path)
 {
 	static constexpr qint64 TimeOut_ms = 500;
 
@@ -370,19 +381,18 @@ static QIcon GetIconBackground(const QString& internalName)
 		getIconThread->start();
 	}
 
-	GetIconBackgroundoParams params(internalName);
+	GetIconBackgroundoParams params(path);
 	if (! getIconThread->runWithParams(params, TimeOut_ms))
 	{
 		// Cancel and reset getIconThread. It'll be reinitialized the next time we get called.
 		getIconThread->cancel();
 		getIconThread = nullptr;
-		qWarning() << "SHGetFileInfo() timed out for " << internalName;
+		qWarning() << "SHGetFileInfo() timed out for " << path.internalPath();
 		return {};
 	}
 
 	return params.m_icon;
 }
-#endif //HICON_IN_BACKGROUND_THREAD == 1
 //
 //
 //
@@ -667,6 +677,11 @@ const QString& NavigationPath::inputPath() const
 	return m_inputPath;
 }
 //
+bool NavigationPath::isVirtualFolder() const
+{
+	return m_virtualFolder;
+}
+//
 const QString& NavigationPath::internalPath() const
 {
 	return m_internalPath;
@@ -811,62 +826,31 @@ QIcon NavigationPath::icon() const
 {
 	if (NavigationPathUtils* pUtils = GetUtils())
 	{
-		if (m_virtualFolder)
-		{
-#if HICON_IN_BACKGROUND_THREAD == 1
-			// As stated in MS doc :
-			// "You should call this function from a background thread. Failure to do so could cause the UI to stop responding."
-			// https://docs.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shgetfileinfoa
-			// --> This background thread prevents from icon loading error on some specific virtual folders
-			return GetIconBackground(m_internalPath);
-#else
-			QIcon icon = {};
-			
-			PIDLIST_ABSOLUTE pidl = nullptr;
-			std::wstring wpath = m_internalPath.toStdWString();
-			HRESULT hr = SHParseDisplayName(wpath.c_str(), 0, &pidl, 0, 0);
-			if (SUCCEEDED(hr))
-			{
-				SHFILEINFO info;
-				unsigned int flags = SHGFI_ICON | SHGFI_SMALLICON | SHGFI_SYSICONINDEX | SHGFI_ADDOVERLAYS | SHGFI_OVERLAYINDEX;
-				hr = SHGetFileInfo((LPCWSTR) pidl, -1, &info, sizeof(SHFILEINFO), SHGFI_PIDL | flags);
-				CoTaskMemFree(pidl);
-				if (SUCCEEDED(hr))
-				{
-					QPixmap pixmap = QPixmap::fromImage(QImage::fromHICON(info.hIcon));
-					DestroyIcon(info.hIcon);
-					icon = QIcon(pixmap);
-				}
-				else
-				{
-					qWarning() << "NavigationPath::icon() : could not get icon for " << m_internalPath << " (" << GetErrorAsString(hr) << "). Returning empty icon.";
-				}
-			}
-			else
-			{
-				qWarning() << "NavigationPath::icon() : could not parse display name " << m_internalPath << " (" << GetErrorAsString(hr) << "). Returning empty icon.";
-			}
-			return icon;
-#endif //HICON_IN_BACKGROUND_THREAD
-		}
-		else
+		// As stated in MS doc :
+		// "You should call this function from a background thread. Failure to do so could cause the UI to stop responding."
+		// https://docs.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shgetfileinfoa
+		// --> This background thread prevents from icon loading error on some specific virtual folders
+		QIcon icon = GetIconBackground(m_internalPath);
+
+		// Handle hidden folders
+		if (! m_virtualFolder)
 		{
 			static QSize TranspIconSize = {40, 40}; // px, size of generated semi-transparent icons
 
 			QFileInfo fi(m_internalPath);
-			QIcon ico = pUtils->iconProvider().icon(fi);
 			if (fi.isHidden())
 			{
 				QPixmap pmap(TranspIconSize);
 				pmap.fill(Qt::transparent);
 				QPainter painter(&pmap);
 				painter.setOpacity(0.5);
-				ico.paint(&painter, 0, 0, TranspIconSize.width(), TranspIconSize.height());
+				icon.paint(&painter, 0, 0, TranspIconSize.width(), TranspIconSize.height());
 				painter.end();
-				ico = QIcon(pmap);
+				icon = QIcon(pmap);
 			}
-			return ico;
 		}
+
+		return icon;
 	}
 	else
 	{

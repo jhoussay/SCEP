@@ -84,6 +84,10 @@ public:
 	 */
 	const QString&	inputPath() const;
 	/**
+	 *	@brief		Indicates whether the path is virtual or not
+	 */
+	bool			isVirtualFolder() const;
+	/**
 	 *	@brief		Returns the full win32 path
 	 *
 	 *	Two cases :

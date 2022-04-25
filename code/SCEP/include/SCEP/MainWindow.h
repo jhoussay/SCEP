@@ -5,7 +5,6 @@
 #include <SCEP/Navigation.h>
 //
 #include <QMainWindow>
-#include <QFileIconProvider>
 //
 //#define FRAMELESS
 //

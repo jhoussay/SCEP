@@ -24,7 +24,6 @@ class QToolButton;
 #include <QCompleter>
 #include <QProxyStyle>
 #include <QPixmap>
-#include <QFileIconProvider>
 
 #include <vector>
 #include <optional>
@@ -180,7 +179,6 @@ protected:
 private:
 	Theme*					ptr_theme = nullptr;
 	StyleProxy*				p_style_crumbs = nullptr;
-	QFileIconProvider		m_file_ico_prov;
 	FilenameModel*			p_fs_model = nullptr;
 	QLabel*					p_path_icon = nullptr;
 	AddressLineEdit*		p_line_address = nullptr;
