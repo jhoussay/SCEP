@@ -83,9 +83,12 @@ if ($setup_version -ne $current_version) {
 
 # build setup
 # -----------
-# msbuild does not support building vdproj projects, falling back to devenv.com
+# 1/ msbuild does not support building vdproj projects, falling back to devenv.com
 & devenv.com "$PSScriptRoot\setup\SCEP\SCEP.sln" /Rebuild "Release|Default"
-# rename and copy setup
+# 2/ the generated setup does not require admin rights
+# https://stackoverflow.com/questions/4080131/how-to-make-a-setup-work-for-limited-non-admin-users
+& "$env:WindowsSdkVerBinPath\x86\MsiInfo.exe" "$PSScriptRoot\setup\SCEP\Release\SCEP.msi" -w 10
+# 3/ rename and copy setup
 Copy-Item -Force "$PSScriptRoot\setup\SCEP\Release\SCEP.msi" "$PSScriptRoot\SCEP_${current_version}_${env:BUILD}.msi"
 
 if ($final_warning) {
