@@ -33,7 +33,7 @@ SCEP is released under MIT license.
 
 ## Versions
 
-### SCEP 0.1 - 29/03/2022
+### SCEP 0.1.0 - 24/04/2022
 
 - Embedding file explorer in tabs
 - Open folder in new tab with middle click or through a context menu dedicated entry
@@ -63,6 +63,10 @@ SCEP is released under MIT license.
 - Full support for icons and icons overlays.
 - On startup, SCEP reopens the previous tabs
 - Windows installer
+### SCEP 0.1.1 - 25/04/2022
+
+- The Windows Installer does not require administrator privileges any more
+- The icon overlays are back in the explorer window
 
 ### Towards SCEP 1.0
 
