@@ -483,37 +483,49 @@ NavigationPath::NavigationPath(PCIDLIST_ABSOLUTE pidlFolder)
 		m_internalPath = QString::fromWCharArray(pszName);
 		CoTaskMemFree(pszName);
 	}
-	// Defaulting to the normal display
-	// example : "Network" virtual folder
 	else
 	{
-		hr = SHGetNameFromIDList(pidlFolder, SIGDN_DESKTOPABSOLUTEPARSING, &pszName);
+		// Trying another way to handle UNC paths
+		hr = SHGetNameFromIDList(pidlFolder, SIGDN_DESKTOPABSOLUTEEDITING, &pszName);
 		if (SUCCEEDED(hr))
 		{
-			if (NavigationPathUtils* pUtils = GetUtils())
+			m_virtualFolder = false;
+			m_inputPath = QString::fromWCharArray(pszName);
+			m_internalPath = QString::fromWCharArray(pszName);
+			CoTaskMemFree(pszName);
+		}
+		else
+		{
+			// Defaulting to the normal display
+			// example : "Network" virtual folder
+			hr = SHGetNameFromIDList(pidlFolder, SIGDN_DESKTOPABSOLUTEPARSING, &pszName);
+			if (SUCCEEDED(hr))
 			{
-				std::optional<KnownFolder> knownFolder = pUtils->knownFolder(QString::fromWCharArray(pszName));
-				CoTaskMemFree(pszName);
-				if (knownFolder.has_value()) // Found it ?
+				if (NavigationPathUtils* pUtils = GetUtils())
 				{
-					m_internalPath = knownFolder.value().internalName;
-					m_inputPath = knownFolder.value().internalName;
-					m_virtualFolder = knownFolder.value().virtualFolder;
-					return;
+					std::optional<KnownFolder> knownFolder = pUtils->knownFolder(QString::fromWCharArray(pszName));
+					CoTaskMemFree(pszName);
+					if (knownFolder.has_value()) // Found it ?
+					{
+						m_internalPath = knownFolder.value().internalName;
+						m_inputPath = knownFolder.value().internalName;
+						m_virtualFolder = knownFolder.value().virtualFolder;
+						return;
+					}
+					else
+					{
+						qCritical() << "Could not create NavigationPath from absolute item list (1).";
+					}
 				}
 				else
 				{
-					qCritical() << "Could not create NavigationPath from absolute item list (1).";
+					qCritical() << "NavigationPath::NavigationPath: No utils instance";
 				}
 			}
 			else
 			{
-				qCritical() << "NavigationPath::NavigationPath: No utils instance";
+				qCritical() << "Could not create NavigationPath from absolute item list (2).";
 			}
-		}
-		else
-		{
-			qCritical() << "Could not create NavigationPath from absolute item list (2).";
 		}
 	}
 }
@@ -534,69 +546,84 @@ NavigationPath::NavigationPath(QString path, bool mayContainTranslatedLabels)
 			if (mayContainTranslatedLabels)
 			{
 				QStringList list = path.split("\\", Qt::SkipEmptyParts);
-				assert(list.size() > 0);
-
-				// First : can we identify a drive ?
-				const QString driveStr = list[0];
-				std::optional<NavigationPath> drive;
-				for (const NavigationPath& drive_tmp : Drives())
+				if (list.size() > 0)
 				{
-					if (driveStr.toLower() + "\\" == drive_tmp.internalPath().toLower())
+					// Root
+					QString rootStr = list[0];
+					std::optional<NavigationPath> root;
+					// Is it an UNC path ?
+					if (path.startsWith("\\\\"))
 					{
-						drive = drive_tmp;
-						break;
+						rootStr = "\\\\" + rootStr;
+						root = rootStr;
 					}
-				}
-
-				// Set up the loop
-				m_internalPath = driveStr;
-				bool ok = drive.has_value();
-
-				// Iterate over items
-				for (int i = 1; i < list.size(); i++)
-				{
-					const QString& item = list[i];
-
-					// Still ok ?
-					if (ok)
-					{
-						// Does the path exist ?
-						QString firstTry = m_internalPath + "\\" + item;
-						if (QFileInfo(firstTry).exists())
-						{
-							// If so, it's ok
-							m_internalPath += "\\" + item;
-						}
-						else
-						{
-							// Else, try all the files and folders at that level and compare to their labels
-							bool found = false;
-							QDir parentDir(m_internalPath + "\\");
-							QStringList children = parentDir.entryList(QDir::AllEntries | QDir::NoDotAndDotDot);
-							for (const QString& child : children)
-							{
-								NavigationPath childPath(m_internalPath + "\\" + child);
-								if (childPath.label().toLower() == item.toLower())
-								{
-									found = true;
-									m_internalPath = childPath.internalPath();
-									break;
-								}
-							}
-							
-							// Didn't find it...
-							if (! found)
-							{
-								ok = false;
-								m_internalPath += "\\" + item;
-							}
-						}
-					}
-					// KO : just proceed
+					// Can we identify a drive ?
 					else
 					{
-						m_internalPath += "\\" + item;
+						for (const NavigationPath& drive_tmp : Drives())
+						{
+							if (rootStr.toLower() + "\\" == drive_tmp.internalPath().toLower())
+							{
+								root = drive_tmp;
+								break;
+							}
+						}
 					}
+
+					// Set up the loop
+					m_internalPath = rootStr;
+					bool ok = root.has_value();
+
+					// Iterate over items
+					for (int i = 1; i < list.size(); i++)
+					{
+						const QString& item = list[i];
+
+						// Still ok ?
+						if (ok)
+						{
+							// Does the path exist ?
+							QString firstTry = m_internalPath + "\\" + item;
+							if (QFileInfo(firstTry).exists())
+							{
+								// If so, it's ok
+								m_internalPath += "\\" + item;
+							}
+							else
+							{
+								// Else, try all the files and folders at that level and compare to their labels
+								bool found = false;
+								QDir parentDir(m_internalPath + "\\");
+								QStringList children = parentDir.entryList(QDir::AllEntries | QDir::NoDotAndDotDot);
+								for (const QString& child : children)
+								{
+									NavigationPath childPath(m_internalPath + "\\" + child);
+									if (childPath.label().toLower() == item.toLower())
+									{
+										found = true;
+										m_internalPath = childPath.internalPath();
+										break;
+									}
+								}
+								
+								// Didn't find it...
+								if (! found)
+								{
+									ok = false;
+									m_internalPath += "\\" + item;
+								}
+							}
+						}
+						// KO : just proceed
+						else
+						{
+							m_internalPath += "\\" + item;
+						}
+					}
+				}
+				else
+				{
+					m_internalPath = path;
 				}
 			}
 			// No translated path, keep "as is"
@@ -740,6 +767,7 @@ bool NavigationPath::isExistingDirectory() const
 	}
 	else
 	{
+		// TODO handle zip file content ?
 		QFileInfo fi(m_internalPath);
 		return (! m_internalPath.isEmpty()) && fi.exists() && fi.isDir();
 	}
@@ -753,7 +781,10 @@ bool NavigationPath::isReadableDirectory() const
 	}
 	else
 	{
-		return QDir(m_internalPath).isReadable();
+		// TODO handle zip file content ?
+
+		// TODO QDir::isReadable seems to always return false on UNC pathes ?
+		return true;//QDir(m_internalPath).isReadable();
 	}
 }
 //
