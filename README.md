@@ -63,10 +63,12 @@ SCEP is released under MIT license.
 - Full support for icons and icons overlays.
 - On startup, SCEP reopens the previous tabs
 - Windows installer
+
 ### SCEP 0.1.1 - 25/04/2022
 
 - The Windows Installer does not require administrator privileges any more
 - The icon overlays are back in the explorer window
+- UNC paths work
 
 ### Towards SCEP 1.0
 
