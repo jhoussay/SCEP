@@ -158,13 +158,13 @@ Open Powershell in the SCEP root folder:
 This script requires SCEP to be built in release mode beforehand.\
 The installation program name is `SCEP_x.y.z_[x86/x64].msi`, with `x`, `y` and `z` standing for major, minor and patch version numbers.
 
-## Versionning
+## Versioning
 
 The version numbers (major, minor, patch format) are set in the `VERSION` file located in the SCEP root folder.
 
 In order to change the version numbers, it is necessary to :
 * Modify the `VERSION` file,
 * Recreate the MSVC solution (`.\qmake.ps1`)
-* Rebuild SCEP (in MSVSC or with `.\build.ps1`)
+* Rebuild SCEP (in MSVC or with `.\build.ps1`)
 * Generate a new setup (`.\setup.ps1`)\
 **Warning**: This script will warn about 2 modifications made to `SCEP.vdproj`: `ProductVersion` have been updated to match `VERSION` file content and `ProductCode` have been overwritten with a new GUID in order to handle smooth update. **These modifications must be commited and pushed.**

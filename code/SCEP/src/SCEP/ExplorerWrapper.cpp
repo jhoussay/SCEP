@@ -324,62 +324,92 @@ IFACEMETHODIMP ExplorerWrapper::OnNavigationFailed(PCIDLIST_ABSOLUTE pidlFolder)
 //
 void ExplorerWrapper::rename()
 {
-	simulateHotKey(p_psv, {VK_F2});
-	SetFocus(m_hwnd_sv);
+	if (hasFocus())
+	{
+		simulateHotKey(p_psv, {VK_F2});
+		SetFocus(m_hwnd_sv);
+	}
 }
 //
 void ExplorerWrapper::copy()
 {
-	simulateHotKey(p_psv, {VK_CONTROL, 0x43/*C*/});
-	SetFocus(m_hwnd_sv);
+	if (hasFocus())
+	{
+		simulateHotKey(p_psv, {VK_CONTROL, 0x43/*C*/});
+		SetFocus(m_hwnd_sv);
+	}
 }
 //
 void ExplorerWrapper::cut()
 {
-	simulateHotKey(p_psv, {VK_CONTROL, 0x58/*X*/});
-	SetFocus(m_hwnd_sv);
+	if (hasFocus())
+	{
+		simulateHotKey(p_psv, {VK_CONTROL, 0x58/*X*/});
+		SetFocus(m_hwnd_sv);
+	}
 }
 //
 void ExplorerWrapper::paste()
 {
-	simulateHotKey(p_psv, {VK_CONTROL, 0x56/*V*/});
-	SetFocus(m_hwnd_sv);
+	if (hasFocus())
+	{
+		simulateHotKey(p_psv, {VK_CONTROL, 0x56/*V*/});
+		SetFocus(m_hwnd_sv);
+	}
 }
 //
 void ExplorerWrapper::del()
 {
-	simulateHotKey(p_psv, {VK_DELETE});
-	SetFocus(m_hwnd_sv);
+	if (hasFocus())
+	{
+		simulateHotKey(p_psv, {VK_DELETE});
+		SetFocus(m_hwnd_sv);
+	}
 }
 //
 void ExplorerWrapper::forceDel()
 {
-	simulateHotKey(p_psv, {VK_SHIFT, VK_DELETE});
-	SetFocus(m_hwnd_sv);
+	if (hasFocus())
+	{
+		simulateHotKey(p_psv, {VK_SHIFT, VK_DELETE});
+		SetFocus(m_hwnd_sv);
+	}
 }
 //
 void ExplorerWrapper::selectAll()
 {
-	simulateHotKey(p_psv, {VK_CONTROL, 0x41/*A*/});
-	SetFocus(m_hwnd_sv);
+	if (hasFocus())
+	{
+		simulateHotKey(p_psv, {VK_CONTROL, 0x41/*A*/});
+		SetFocus(m_hwnd_sv);
+	}
 }
 //
 void ExplorerWrapper::mkDir()
 {
-	simulateHotKey(p_psv, {VK_CONTROL, VK_SHIFT, 0x4E/*N*/});
-	SetFocus(m_hwnd_sv);
+	if (hasFocus())
+	{
+		simulateHotKey(p_psv, {VK_CONTROL, VK_SHIFT, 0x4E/*N*/});
+		SetFocus(m_hwnd_sv);
+	}
 }
 //
 void ExplorerWrapper::undo()
 {
-	simulateHotKey(p_psv, {VK_CONTROL, 0x5A/*Z*/});
-	SetFocus(m_hwnd_sv);
+	if (hasFocus())
+	{
+		simulateHotKey(p_psv, {VK_CONTROL, 0x5A/*Z*/});
+		SetFocus(m_hwnd_sv);
+	}
 }
 //
 void ExplorerWrapper::redo()
 {
-	simulateHotKey(p_psv, {VK_CONTROL, 0x59/*Y*/});
-	SetFocus(m_hwnd_sv);
+	if (hasFocus())
+	{
+		simulateHotKey(p_psv, {VK_CONTROL, 0x59/*Y*/});
+		SetFocus(m_hwnd_sv);
+	}
 }
 //
 void ExplorerWrapper::refresh()
@@ -843,3 +873,18 @@ void ExplorerWrapper::notifyContextMenuCustomOption([[maybe_unused]] int iOption
 	}
 }
 //
+bool ExplorerWrapper::hasFocus() const
+{
+	HWND hwnd = GetFocus();	
+	TCHAR str[MAX_PATH];
+	if (GetClassName(hwnd, str, MAX_PATH))
+	{
+		return StrCmpW(str, L"DirectUIHWND") == 0;
+	}
+	else
+	{
+		qDebug() << "[ExplorerWrapper::hasFocus] GetClassName error : " << GetLastErrorAsString();
+		return false;
+	}
+}
+

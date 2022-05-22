@@ -104,6 +104,8 @@ private:
 	std::map<long, QString>	getContextMenuCustomOptions(const std::vector<NavigationPath>& contextMenuSelectedPaths);
 	void					notifyContextMenuCustomOption(int iOption, const std::vector<NavigationPath>& contextMenuSelectedPaths);
 
+	bool					hasFocus() const;
+
 private:
 	Theme*					ptr_theme = nullptr;
 
