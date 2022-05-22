@@ -1065,7 +1065,7 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:SCEP"
-        "ProductCode" = "8:{A82E1113-059E-4E04-9538-E9D46AAD1964}"
+        "ProductCode" = "8:{F25EF6F6-2707-4719-A532-EEA4B0130FFC}"
         "PackageCode" = "8:{BDB35D0E-74F4-4FDB-B992-08FF45F63D34}"
         "UpgradeCode" = "8:{85EA2171-9FB2-48FA-A029-28AFEFF622BB}"
         "AspNetVersion" = "8:2.0.50727.0"
@@ -1073,7 +1073,7 @@
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:0.1.1"
+        "ProductVersion" = "8:0.1.2"
         "Manufacturer" = "8:SCEP"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
@@ -1556,5 +1556,6 @@
         }
     }
 }
+
 
 

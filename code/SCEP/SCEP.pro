@@ -13,6 +13,8 @@ include(../third_parties/linkollector-win/linkollector-win.prf)
 # h
 INCLUDEPATH *= include
 HEADERS += include/SCEP/SCEP.h
+HEADERS += include/SCEP/Version.h
+HEADERS += include/SCEP/Date.h
 HEADERS += include/SCEP/ExplorerWidget.h
 HEADERS += include/SCEP/ExplorerWrapper.h
 HEADERS += include/SCEP/Error.h
