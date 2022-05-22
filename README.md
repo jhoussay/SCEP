@@ -35,7 +35,7 @@ SCEP is released under MIT license.
 
 ### SCEP 0.1.2 - 22/05/2022
 
-- Build fix : invalid behaviour when hitting hot key (CTRL+C, DEL...) while renaming
+- Bug fix : invalid behaviour when hitting hot key (CTRL+C, DEL...) while renaming
 
 ### SCEP 0.1.1 - 25/04/2022
 
