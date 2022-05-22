@@ -33,6 +33,16 @@ SCEP is released under MIT license.
 
 ## Versions
 
+### SCEP 0.1.2 - 22/05/2022
+
+- Build fix : invalid behaviour when hitting hot key (CTRL+C, DEL...) while renaming
+
+### SCEP 0.1.1 - 25/04/2022
+
+- The Windows Installer does not require administrator privileges any more
+- The icon overlays are back in the explorer window
+- UNC paths work
+
 ### SCEP 0.1.0 - 24/04/2022
 
 - Embedding file explorer in tabs
@@ -63,12 +73,6 @@ SCEP is released under MIT license.
 - Full support for icons and icons overlays.
 - On startup, SCEP reopens the previous tabs
 - Windows installer
-
-### SCEP 0.1.1 - 25/04/2022
-
-- The Windows Installer does not require administrator privileges any more
-- The icon overlays are back in the explorer window
-- UNC paths work
 
 ### Towards SCEP 1.0
 
