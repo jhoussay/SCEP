@@ -1,0 +1,9 @@
+INCLUDEPATH *= $$PWD/include
+
+include($$PWD/../../VERSION)
+
+build_pass:CONFIG(debug, debug|release) {
+    LIBS *= -lSCEP_CORE_d$$SCEP_MAJ_VERSION
+} else {
+    LIBS *= -lSCEP_CORE$$SCEP_MAJ_VERSION
+}

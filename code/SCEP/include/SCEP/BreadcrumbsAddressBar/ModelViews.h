@@ -5,7 +5,7 @@
 
 #pragma once
 //
-#include <SCEP/Navigation.h>
+#include <SCEP_CORE/Navigation.h>
 //
 #include <QStringListModel>
 #include <QListView>

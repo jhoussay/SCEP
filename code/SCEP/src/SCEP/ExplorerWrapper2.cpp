@@ -1,6 +1,6 @@
 #include <SCEP/ExplorerWrapper2.h>
 #include <SCEP/Theme.h>
-#include <SCEP/win32_utils.h>
+#include <SCEP_CORE/win32_utils.h>
 //
 #include <linkollector-win/dark_mode.h>
 //

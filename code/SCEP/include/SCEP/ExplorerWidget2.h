@@ -1,8 +1,8 @@
 #pragma once
 //
-#include <SCEP/Error.h>
 #include <SCEP/SCEP.h>
-#include <SCEP/Navigation.h>
+#include <SCEP_CORE/Error.h>
+#include <SCEP_CORE/Navigation.h>
 //
 #include <QWidget>
 //

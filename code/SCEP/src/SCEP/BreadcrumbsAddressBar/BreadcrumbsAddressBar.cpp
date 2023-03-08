@@ -7,8 +7,8 @@
 #include <SCEP/BreadcrumbsAddressBar/Layouts.h>
 #include <SCEP/BreadcrumbsAddressBar/ModelViews.h>
 #include <SCEP/BreadcrumbsAddressBar/Stylesheets.h>
-#include <SCEP/win32_utils.h>
 #include <SCEP/Theme.h>
+#include <SCEP_CORE/win32_utils.h>
 //
 #include <QStyleOptionToolButton>
 #include <QStyleFactory>

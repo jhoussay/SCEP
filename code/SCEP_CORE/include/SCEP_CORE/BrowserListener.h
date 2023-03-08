@@ -23,10 +23,22 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 // ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+
+// /!\ Note
+// Modifications from jhoussay on 01/03/2023 in order to get rid of atl headers
+
+
+
+#include <string>
+
+#include <exdisp.h>
+#include <shldisp.h>
+
+#include <SCEP_CORE/SCEP_CORE.h>
+
 #ifndef GEARS_BASE_IE_BROWSER_LISTENER_H__
 #define GEARS_BASE_IE_BROWSER_LISTENER_H__
-
-#include "gears/base/ie/atl_browser_headers.h"
 
 // Use this calss to capture all the IDispatch invokes.
 template <class T>
@@ -267,14 +279,15 @@ protected:
 // Note:
 // OnUpdateBegin() and OnUpdateComplete() are called OnPageDownloadBegin()
 // and OnPageDownloadComplete() respectively in the code below.
-class BrowserListener
+class SCEP_CORE_DLL BrowserListener
 {
 public:
-    BrowserListener() : invoker_(NULL), download_depth_(0) /*, num_navigations_(0)*/ {}
+    BrowserListener() : browserInvoker_(NULL), viewInvoker_(NULL), download_depth_(0) /*, num_navigations_(0)*/ {}
     virtual ~BrowserListener() { Teardown(); }
 
-    // Attach/detach listener to a browser.
-    void Init(IWebBrowser2 *browser);
+    // Attach/detach listener to a browser and its view.
+    void InitBrowser(IWebBrowser2 *browser); // first
+    void InitView(IShellFolderViewDual *view); // second
     void Teardown();
 
     // Returns true if inside a OnPageDownloadBegin/OnPageDownloadComplete pair.
@@ -282,22 +295,25 @@ public:
 
     // Accessors
     IWebBrowser2 *browser() const { return browser_; }
+    IShellFolderViewDual *view() const { return view_; }
 
 protected:
     // Helper method to get WebBrowser Busy property.
     bool BrowserBusy();
 
     // Event handler methods.
-    virtual void OnBeforeNavigate2(IWebBrowser2 * /*window*/, const CString & /*url*/,
+    virtual void OnBeforeNavigate2(IWebBrowser2 * /*window*/, const std::wstring & /*url*/,
                                    bool * /*cancel*/) {}
-    virtual void OnDocumentComplete(IWebBrowser2 * /*window*/, const CString & /*url*/) {}
+    virtual void OnDocumentComplete(IWebBrowser2 * /*window*/, const std::wstring & /*url*/) {}
     virtual void OnDownloadBegin() {}
     virtual void OnDownloadComplete() {}
-    virtual void OnNavigateComplete2(IWebBrowser2 * /*window*/, const CString & /*url*/) {}
+    virtual void OnNavigateComplete2(IWebBrowser2 * /*window*/, const std::wstring & /*url*/) {}
     virtual void OnProgressChange(LONG /*progress*/, LONG /*progressMax*/) {}
 
+    virtual void OnSelectionChanged() {}
+
     // Derivative events build on top of IE events.
-    virtual void OnPageDownloadBegin(const CString & /*url*/) {}
+    virtual void OnPageDownloadBegin(const std::wstring & /*url*/) {}
     virtual void OnPageDownloadComplete() {}
 
 private:
@@ -305,9 +321,12 @@ private:
                              LCID lcid, WORD wFlags, DISPPARAMS *params, VARIANT *pVarResult,
                              EXCEPINFO *pExcepInfo, UINT *puArgErr);
 
-    CComPtr<IWebBrowser2> browser_;            // The browser this object is attached to
-    DispatchInvoke<BrowserListener> *invoker_; // Helper event dispatcher.
-    int download_depth_;                       // The depth of downloading request.
+    IWebBrowser2* browser_;                           // The browser this object is attached to
+    DispatchInvoke<BrowserListener> *browserInvoker_; // Helper event dispatcher for the browser
+    int download_depth_;                              // The depth of downloading request.
+
+    IShellFolderViewDual* view_;                      // The view this object is attached to
+    DispatchInvoke<BrowserListener> *viewInvoker_;    // Helper event dispatcher for the view.
 };
 
 #endif // GEARS_BASE_IE_BROWSER_LISTENER_H__

@@ -2,7 +2,7 @@
 //
 #include <SCEP/SCEP.h>
 #include <SCEP/Theme.h>
-#include <SCEP/Navigation.h>
+#include <SCEP_CORE/Navigation.h>
 //
 #include <QMainWindow>
 #include <QFileIconProvider>

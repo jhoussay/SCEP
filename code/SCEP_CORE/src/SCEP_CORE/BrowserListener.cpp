@@ -23,9 +23,17 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 // ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+
+// /!\ Note
+// Modifications from jhoussay on 01/03/2023 in order to get rid of atl headers
+
+
+
 #include <assert.h>
 #include <exdispid.h>
-#include "gears/base/ie/browser_listener.h"
+
+#include <SCEP_CORE/BrowserListener.h>
 
 // Some macros defined here to keep changes from original source to a low roar.
 // See //depot/googleclient/bar/common/(debugbase|macros).h for original
@@ -57,26 +65,61 @@
 #define ATLTRACE __noop
 
 // Attach listener to a browser
-void BrowserListener::Init(IWebBrowser2 *browser)
+void BrowserListener::InitBrowser(IWebBrowser2 *browser)
 {
     browser_ = browser;
-    ASSERT(!invoker_);
-    invoker_ = new DispatchInvoke<BrowserListener>;
-    VERIFY(invoker_);
-    if (!invoker_)
+    //if (browser_)
+    //    browser_->AddRef();
+    ASSERT(!browserInvoker_);
+    browserInvoker_ = new DispatchInvoke<BrowserListener>;
+    VERIFY(browserInvoker_);
+    if (!browserInvoker_)
         return;
-    invoker_->Init(this, &BrowserListener::Invoke);
-    VERIFY(SUCCEEDED(invoker_->Connect(browser, DIID_DWebBrowserEvents2)));
+    browserInvoker_->Init(this, &BrowserListener::Invoke);
+    VERIFY(SUCCEEDED(browserInvoker_->Connect(browser, DIID_DWebBrowserEvents2)));
+}
+//
+void BrowserListener::InitView(IShellFolderViewDual *view)
+{
+    view_ = view;
+    //if (view_)
+    //    view_->AddRef();
+    ASSERT(!viewInvoker_);
+    viewInvoker_ = new DispatchInvoke<BrowserListener>;
+    VERIFY(viewInvoker_);
+    if (!viewInvoker_)
+        return;
+    viewInvoker_->Init(this, &BrowserListener::Invoke);
+    VERIFY(SUCCEEDED(viewInvoker_->Connect(view, DIID_DShellFolderViewEvents)));
 }
 
 // Detach listener from a browser
 void BrowserListener::Teardown()
 {
-    if (invoker_)
+    if (browserInvoker_)
     {
-        invoker_->Disconnect();
-        invoker_->Release();
-        invoker_ = NULL;
+        browserInvoker_->Disconnect();
+        browserInvoker_->Release();
+        browserInvoker_ = NULL;
+    }
+
+    if (browser_)
+    {
+    //    browser_->Release();
+        browser_ = nullptr;
+    }
+
+    if (viewInvoker_)
+    {
+        viewInvoker_->Disconnect();
+        viewInvoker_->Release();
+        viewInvoker_ = NULL;
+    }
+
+    if (view_)
+    {
+    //    view_->Release();
+        view_ = nullptr;
     }
 }
 
@@ -98,6 +141,8 @@ bool BrowserListener::IsDownloading()
     return download_depth_ > 0 || BrowserBusy();
 }
 
+static constexpr DISPID DISPID_SELECTIONCHANGED = 200;
+
 // Dispatcher for IE disp events
 HRESULT __stdcall BrowserListener::Invoke(DISPID event, const IID &riid,
                                           LCID /*lcid*/, WORD /*wFlags*/, DISPPARAMS *params, VARIANT * /*pVarResult*/,
@@ -113,6 +158,8 @@ HRESULT __stdcall BrowserListener::Invoke(DISPID event, const IID &riid,
 
     switch (event)
     {
+    // BROWSER EVENTS
+    /////////////////
     case DISPID_BEFORENAVIGATE2:
     {
         // The parameters for this DISPID are as follows:
@@ -124,15 +171,15 @@ HRESULT __stdcall BrowserListener::Invoke(DISPID event, const IID &riid,
         // [5]: URL to navigate to - VT_BYREF|VT_VARIANT
         // [6]: An object that evaluates to the top-level or frame
         //      WebBrowser object corresponding to the event.
-        CComPtr<IDispatch> window_disp = args[6].pdispVal;
-        CComPtr<IWebBrowser2> window;
-        window_disp.QueryInterface(&window);
-        CString url = args[5].pvarVal->bstrVal;
+        IDispatch* window_disp = args[6].pdispVal;
+        IWebBrowser2* window = nullptr;
+        window_disp->QueryInterface(&window);
+        std::wstring url = args[5].pvarVal->bstrVal;
         bool cancel = false;
 
-        ATLTRACE(
-            _T("BrowserListener:DISPID_BEFORENAVIGATE2:Url: %s  Depth: %d\n"),
-            url, download_depth_);
+        //ATLTRACE(
+        //    _T("BrowserListener:DISPID_BEFORENAVIGATE2:Url: %s  Depth: %d\n"),
+        //    url, download_depth_);
 
         OnBeforeNavigate2(window, url, &cancel);
         assert(!cancel);
@@ -151,17 +198,17 @@ HRESULT __stdcall BrowserListener::Invoke(DISPID event, const IID &riid,
     case DISPID_DOCUMENTCOMPLETE:
     {
         // Increment the number of navigations if we're browsing to a new page.
-        CComBSTR current_url;
+        BSTR current_url;
         VERIFYHR(browser_->get_LocationURL(&current_url));
-        ATLTRACE(
-            _T("BrowserListener:DISPID_DOCUMENTCOMPLETE:Url: %s\n"),
-            current_url.m_str);
+        //ATLTRACE(
+        //    _T("BrowserListener:DISPID_DOCUMENTCOMPLETE:Url: %s\n"),
+        //    current_url.m_str);
         // [0]: URL - VT_BYREF|VT_VARIANT
         // [1]: IDispatch interface of browser/frame
-        CComPtr<IDispatch> window_disp = args[1].pdispVal;
-        CComPtr<IWebBrowser2> window;
-        window_disp.QueryInterface(&window);
-        CString url = args[0].pvarVal->bstrVal;
+        IDispatch* window_disp = args[1].pdispVal;
+        IWebBrowser2* window = nullptr;
+        window_disp->QueryInterface(&window);
+        std::wstring url = args[0].pvarVal->bstrVal;
         OnDocumentComplete(window, url);
 
         // download_depth_ may already be 0 if we received the ProgressMax == 0
@@ -176,19 +223,19 @@ HRESULT __stdcall BrowserListener::Invoke(DISPID event, const IID &riid,
     }
 
     case DISPID_DOWNLOADBEGIN:
-        ATLTRACE(
-            _T("BrowserListener:DISPID_DOWNLOADBEGIN\n"));
+        //ATLTRACE(
+        //    _T("BrowserListener:DISPID_DOWNLOADBEGIN\n"));
         OnDownloadBegin();
         if (!download_depth_)
         {
-            const CString url_empty;
+            const std::wstring url_empty;
             OnPageDownloadBegin(url_empty);
         }
         break;
 
     case DISPID_DOWNLOADCOMPLETE:
-        ATLTRACE(
-            _T("BrowserListener:DISPID_DOWNLOADCOMPLETE\n"));
+        //ATLTRACE(
+        //    _T("BrowserListener:DISPID_DOWNLOADCOMPLETE\n"));
         OnDownloadComplete();
         if (!download_depth_)
             OnPageDownloadComplete();
@@ -198,12 +245,12 @@ HRESULT __stdcall BrowserListener::Invoke(DISPID event, const IID &riid,
     {
         // [0]: URL - VT_BYREF|VT_VARIANT
         // [1]: IDispatch interface of browser/frame
-        CComPtr<IDispatch> window_disp = args[1].pdispVal;
-        CComPtr<IWebBrowser2> window;
-        window_disp.QueryInterface(&window);
-        CString url = args[0].pvarVal->bstrVal;
-        ATLTRACE(
-            _T("BrowserListener:DISPID_NAVIGATECOMPLETE2:Url: %s\n"), url);
+        IDispatch* window_disp = args[1].pdispVal;
+        IWebBrowser2* window = nullptr;
+        window_disp->QueryInterface(&window);
+        std::wstring url = args[0].pvarVal->bstrVal;
+        //ATLTRACE(
+        //    _T("BrowserListener:DISPID_NAVIGATECOMPLETE2:Url: %s\n"), url);
         OnNavigateComplete2(window, url);
         break;
     }
@@ -212,9 +259,9 @@ HRESULT __stdcall BrowserListener::Invoke(DISPID event, const IID &riid,
     {
         LONG progress = args[1].lVal;
         LONG progress_max = args[0].lVal;
-        ATLTRACE(
-            _T("BrowserListener:DISPID_PROGRESSCHANGE: Progress: %d   Max: %d\n"),
-            progress, progress_max);
+        //ATLTRACE(
+        //    _T("BrowserListener:DISPID_PROGRESSCHANGE: Progress: %d   Max: %d\n"),
+        //    progress, progress_max);
         OnProgressChange(progress, progress_max);
         if (progress == 0 && progress_max == 0 && download_depth_ > 0)
         {
@@ -227,6 +274,13 @@ HRESULT __stdcall BrowserListener::Invoke(DISPID event, const IID &riid,
             if (!BrowserBusy())
                 OnPageDownloadComplete();
         }
+        break;
+    }
+    // VIEW EVENTS
+    //////////////
+    case DISPID_SELECTIONCHANGED:
+    {
+        printf("Selection changed!\n");
         break;
     }
     }

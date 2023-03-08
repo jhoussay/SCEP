@@ -4,9 +4,9 @@
  */
 
 #include <SCEP/BreadcrumbsAddressBar/ModelViews.h>
-#include <SCEP/win32_utils.h>
 #include <SCEP/Theme.h>
-#include <SCEP/Navigation.h>
+#include <SCEP_CORE/Navigation.h>
+#include <SCEP_CORE/win32_utils.h>
 //
 #include <QFileInfo>
 #include <QDir>

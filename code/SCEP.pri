@@ -30,3 +30,11 @@ build_pass:CONFIG(debug, debug|release) {
     RCC_DIR  = $$ROOT_DIR/tmp/$$TARGET/$$TYPE/rcc
     PRECOMPILED_DIR = $$ROOT_DIR/tmp/$$TARGET/$$TYPE/pch
 }
+
+# Windows resources files
+include(../VERSION)
+VERSION = $${SCEP_MAJ_VERSION}.$${SCEP_MIN_VERSION}.$${SCEP_PATCH_VERSION}
+
+QMAKE_TARGET_DESCRIPTION = "SCEP is a multi tab file explorer for Windows."
+QMAKE_TARGET_PRODUCT = SCEP
+#QMAKE_TARGET_COPYRIGHT =

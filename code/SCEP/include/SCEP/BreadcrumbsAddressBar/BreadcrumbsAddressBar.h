@@ -6,7 +6,7 @@
 #pragma once
 
 #include <SCEP/SCEP.h>
-#include <SCEP/Navigation.h>
+#include <SCEP_CORE/Navigation.h>
 
 class FilenameModel;
 class StyleProxy;

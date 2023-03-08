@@ -1,73 +1,18 @@
-﻿#include <SCEP/ExplorerWidget.h>
-#include <SCEP/ExplorerWrapper.h>
+#include <SCEP/ExplorerWidget.h>
+#include <SCEP_CORE/ExplorerWrapper.h>
 //
 #include <QWindow>
 #include <QVBoxLayout>
-//
-#include <uxtheme.h>
-//
-static LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
-{
-	switch(Message)
-	{
-	case WM_CLOSE:
-		DestroyWindow(hwnd);
-		break;
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		break;
-	default:
-		return DefWindowProc(hwnd, Message, wParam, lParam);
-	}
-	return 0;
-}
-//
-static HWND CreateTheWindow(LPCWSTR WindowTitle)
-{
-	static LPCWSTR sClassName = L"MyClass";
-
-	// Create & register the class
-	WNDCLASSEX WndClass;
-	WndClass.cbSize = sizeof(WNDCLASSEX);
-	WndClass.style = 0u;
-	WndClass.lpfnWndProc = WndProc; 
-	WndClass.cbClsExtra = 0;
-	WndClass.cbWndExtra = 0;
-	WndClass.lpszClassName = sClassName;
-	WndClass.hInstance = nullptr;
-	WndClass.hIcon = LoadIcon(nullptr, IDI_APPLICATION); 
-	WndClass.hCursor = LoadCursor(nullptr, IDC_ARROW);
-	WndClass.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
-	WndClass.lpszMenuName  = nullptr;
-	WndClass.hIconSm = LoadIcon(nullptr, IDI_APPLICATION);
-	RegisterClassEx(&WndClass);
-
-	// Create & show the window
-	HWND hwnd = CreateWindowEx(	WS_EX_STATICEDGE,
-								sClassName,
-								WindowTitle,
-								WS_OVERLAPPEDWINDOW,
-								CW_USEDEFAULT,
-								CW_USEDEFAULT,
-								320,
-								240,
-								nullptr,
-								nullptr,
-								nullptr,
-								nullptr);
-	return hwnd;
-}
-//
-//
 //
 ExplorerWidget::ExplorerWidget(Theme* ptrTheme, QWidget* pParent, Qt::WindowFlags f)
 	:	QWidget(pParent, f)
 	,	ptr_theme(ptrTheme)
 {
 	p_wrapper = new ExplorerWrapper();
-	connect(p_wrapper, SIGNAL(loading(QString)), this, SIGNAL(loading(QString)));
-	connect(p_wrapper, SIGNAL(pathChanged(QString)), this, SIGNAL(pathChanged(QString)));
-	connect(p_wrapper, SIGNAL(closed()), this, SIGNAL(closed()));
+	connect(p_wrapper, &ExplorerWrapper::loading, this, &ExplorerWidget::loading);
+	connect(p_wrapper, &ExplorerWrapper::pathChanged, this, &ExplorerWidget::pathChanged);
+	connect(p_wrapper, &ExplorerWrapper::closed, this, &ExplorerWidget::closed);
+	connect(p_wrapper, &ExplorerWrapper::openNewTab, this, &ExplorerWidget::openNewTab);
 
 	setMinimumWidth(200);
 	setMinimumHeight(200);
@@ -82,34 +27,17 @@ ExplorerWidget::~ExplorerWidget()
 	}
 }
 //
-ErrorPtr ExplorerWidget::init(const QString& path)
+ErrorPtr ExplorerWidget::init(const NavigationPath& path)
 {
 	// Initialize the explorer
-	CALL( p_wrapper->initialize(ptr_theme, path) );
-
-	// The trick !!!
-	// - new win32 window (proxy) -> can embed a window from another process
-	// - embedding Qt widget : can embed the proxy window because it belongs to the same process
-	//                         while it can't directly embed the explorer window !
-
-	// Create a new empty window
-	m_windowId = CreateTheWindow(L"Win32 SCEP");
-	CHECK(m_windowId, "Could not create win32 window");
-
-	// Change explorer window parent to the newly created window
-	HWND explorerId = p_wrapper->hwnd();
-	HWND oldId = SetParent(explorerId, m_windowId);
-	CHECK(oldId, "Could not change explorer window parent : " + QString::number(GetLastError()));
-	LONG rslt = SetWindowLong(explorerId, GWL_STYLE, WS_CHILDWINDOW);
-	CHECK(rslt != 0, "Could not change explorer window style : " + QString::number(GetLastError()));
+	CALL( p_wrapper->initialize(/*m_windowId,*/ ptr_theme, path) );
 
 	// Create the embedding Qt widget
-	QWindow* pWindow = QWindow::fromWinId((WId) m_windowId);
+	QWindow* pWindow = QWindow::fromWinId((WId) /*m_windowId*/ p_wrapper->hwnd());
 	CHECK(pWindow, "Could not create QWindow !");
-	p_widget = QWidget::createWindowContainer(pWindow);
+	p_widget = QWidget::createWindowContainer(pWindow, this);
 	p_widget->setMinimumWidth(100);
 	p_widget->setMinimumHeight(100);
-	p_widget->setParent(this);
 	QVBoxLayout* pLayout = new QVBoxLayout(this);
 	pLayout->setContentsMargins(0, 0, 0, 0);
 	pLayout->addWidget(p_widget);
@@ -119,14 +47,14 @@ ErrorPtr ExplorerWidget::init(const QString& path)
 	return success();
 }
 //
-ErrorPtr ExplorerWidget::setCurrentPath(const QString& path)
+ErrorPtr ExplorerWidget::setCurrentPath(const NavigationPath& path)
 {
 	CHECK( p_wrapper, "Unitialized object !" );
 	CALL( p_wrapper->setCurrentPath(path) );
 	return success();
 }
 //
-QString ExplorerWidget::currentPath() const
+NavigationPath ExplorerWidget::currentPath() const
 {
 	if (p_wrapper)
 	{
@@ -152,39 +80,14 @@ void ExplorerWidget::paintEvent([[maybe_unused]] QPaintEvent* pEvent)
 	//QWidget::paintEvent(pEvent);
 }
 //
-ErrorPtr ExplorerWidget::updateEmbeddedWidget_p()
-{
-	if (QWidget* pWidget = p_widget)
-	{
-		HWND explorerId = p_wrapper->hwnd();
-
-		// Estimate the title bar height
-		HTHEME htheme = GetWindowTheme(explorerId);
-		int h = GetThemeSysSize(htheme, SM_CXBORDER) + GetThemeSysSize(htheme, SM_CYSIZE) + GetThemeSysSize(htheme, SM_CXPADDEDBORDER) * 2;
-
-		// Set the position
-		QPoint pos = p_widget->mapToGlobal(QPoint(0, 0));
-		BOOL okPos = SetWindowPos(	explorerId,
-									nullptr,
-									0,//pos.x(),
-									-h,//pos.y(),
-									p_widget->width(),
-									p_widget->height() + h,
-									SWP_NOZORDER);
-		CHECK(okPos, "Position and size change error");
-
-		UpdateWindow(explorerId);
-		UpdateWindow(m_windowId);
-	}
-
-	return success();
-}
-//
 void ExplorerWidget::updateEmbeddedWidget()
 {
-	if (ErrorPtr pError = updateEmbeddedWidget_p())
+	if (p_widget && p_wrapper)
 	{
-		displayError(pError);
+		if (ErrorPtr pError = p_wrapper->updateWindow(p_widget->width(), p_widget->height()))
+		{
+			displayError(pError);
+		}
 	}
 }
 //

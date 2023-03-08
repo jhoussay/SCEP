@@ -20,7 +20,7 @@
 #include <QPushButton>
 #endif //FRAMELESS
 //
-#define EXPLORER_WIDGET_VERSION 2
+#define EXPLORER_WIDGET_VERSION 1
 // 
 #if EXPLORER_WIDGET_VERSION == 1
 #	include <SCEP/ExplorerWidget.h>
@@ -162,6 +162,11 @@ MainWindow::MainWindow(Theme* ptrTheme, QSettings* ptrSettings)
 			{
 				qWarning() << "Cannot restore tab on " << tab << " because it does not exist anymore or cannot be reached.";
 			}
+		}
+		// Maybe all creation steps failed, so we need to create a tab
+		if (p_ui->tabWidget->count() == 0)
+		{
+			addNewTab();
 		}
 
 		int currentTab = ptr_settings->value(CurrentTabStr, 0).toInt();

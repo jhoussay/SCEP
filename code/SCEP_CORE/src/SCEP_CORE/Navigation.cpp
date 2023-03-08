@@ -1,6 +1,6 @@
-#include <SCEP/Navigation.h>
-#include <SCEP/Error.h>
-#include <SCEP/win32_utils.h>
+#include <SCEP_CORE/Navigation.h>
+#include <SCEP_CORE/Error.h>
+#include <SCEP_CORE/win32_utils.h>
 //
 #include <QFileInfo>
 #include <QFileIconProvider>

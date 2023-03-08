@@ -1,6 +1,8 @@
-﻿#pragma once
+#pragma once
 //
-#include <SCEP/Error.h>
+#include <SCEP/SCEP.h>
+#include <SCEP_CORE/Error.h>
+#include <SCEP_CORE/Navigation.h>
 //
 #include <QWidget>
 //
@@ -25,27 +27,27 @@ public:
 	virtual ~ExplorerWidget();
 
 public:
-	ErrorPtr init(const QString& path = {});
+	ErrorPtr init(const NavigationPath& path = {});
 
-	ErrorPtr setCurrentPath(const QString& path);
-	QString currentPath() const;
+	ErrorPtr setCurrentPath(const NavigationPath& path);
+	NavigationPath currentPath() const;
 
 signals:
-	void	loading(QString path);
-	void	pathChanged(QString path);
+	void	loading(const NavigationPath& path);
+	void	pathChanged(const NavigationPath& path);
+	void	openNewTab(const NavigationPath& path, NewTabPosition position, NewTabBehaviour behaviour);
 	void	closed();
 
 protected:
 	void	paintEvent(QPaintEvent* pEvent) override;
 
 private:
-	ErrorPtr updateEmbeddedWidget_p();
-	void updateEmbeddedWidget();
+	void	updateEmbeddedWidget();
 
 private:
 	Theme* ptr_theme = nullptr;
 	ExplorerWrapper* p_wrapper = nullptr;
-	HWND m_windowId = 0;
+	//HWND m_windowId = 0;
 	bool m_visibleExplorer = false;
 	QWidget* p_widget = nullptr;
 };

@@ -1,5 +1,7 @@
 #pragma once
 //
+#include <SCEP_CORE/SCEP_CORE.h>
+//
 #include <QString>
 #include <QIcon>
 //
@@ -20,10 +22,10 @@ class NavigationPath;
 using NavigationPaths = std::vector<NavigationPath>;
 //
 /**
- *	@ingroup				SCEP
+ *	@ingroup				SCEP_CORE
  *	@brief					Class representing a path which can be a file system path (real path) or a Windows virtual folder
  */
-class NavigationPath
+class SCEP_CORE_DLL NavigationPath
 {
 public:
 	/**
@@ -188,7 +190,7 @@ private:
 //
 //
 /**
- *	@ingroup		SCEP
+ *	@ingroup		SCEP_CORE
  *	@brief			Navigation history
  *
  *	The navigation is *never* empty : it can be empty only before the first navigation finishes, in the wrapper initialization function.
@@ -222,7 +224,7 @@ private:
  *	 - [2] path2
  *	 - [3] path5 (*)
  */
-class NavigationHistory
+class SCEP_CORE_DLL NavigationHistory
 {
 public:
 	/**
