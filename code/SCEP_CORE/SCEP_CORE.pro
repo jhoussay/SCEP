@@ -4,7 +4,7 @@ TEMPLATE = vclib
 
 # Other libs
 QT *= core gui widgets
-LIBS *= -lUxTheme
+LIBS *= -lUxTheme -lShlwapi
 include(../third_parties/linkollector-win/linkollector-win.prf)
 
 # h

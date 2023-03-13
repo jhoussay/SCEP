@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 		//HWND hwnd = CreateTheWindow(L"Test");
 		//ShowWindow(hwnd, SW_SHOW);
 		//ExplorerWrapper wrapper;
-		//wrapper.initialize(hwnd, &theme, NavigationPath("C:\\Temp"));
+		//wrapper.initialize(&theme, NavigationPath("C:\\Temp"));
 		//wrapper.setVisible(true);
 	
 		//ExplorerWidget widget(&theme);

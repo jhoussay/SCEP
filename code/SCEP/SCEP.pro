@@ -4,7 +4,7 @@ TEMPLATE = app
 
 # Other libs
 QT *= core gui widgets
-LIBS *= -lUxTheme -lShlwapi
+
 include(../SCEP_CORE/SCEP_CORE.prf)
 include(../third_parties/linkollector-win/linkollector-win.prf)
 

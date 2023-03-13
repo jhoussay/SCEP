@@ -70,7 +70,12 @@ void BrowserListener::InitBrowser(IWebBrowser2 *browser)
     browser_ = browser;
     //if (browser_)
     //    browser_->AddRef();
-    ASSERT(!browserInvoker_);
+    if (browserInvoker_)
+    {
+        browserInvoker_->Disconnect();
+        delete browserInvoker_;
+        browserInvoker_ = nullptr;
+    }
     browserInvoker_ = new DispatchInvoke<BrowserListener>;
     VERIFY(browserInvoker_);
     if (!browserInvoker_)
@@ -84,7 +89,12 @@ void BrowserListener::InitView(IShellFolderViewDual *view)
     view_ = view;
     //if (view_)
     //    view_->AddRef();
-    ASSERT(!viewInvoker_);
+    if (viewInvoker_)
+    {
+        viewInvoker_->Disconnect();
+        delete viewInvoker_;
+        viewInvoker_ = nullptr;
+    }
     viewInvoker_ = new DispatchInvoke<BrowserListener>;
     VERIFY(viewInvoker_);
     if (!viewInvoker_)
@@ -280,7 +290,7 @@ HRESULT __stdcall BrowserListener::Invoke(DISPID event, const IID &riid,
     //////////////
     case DISPID_SELECTIONCHANGED:
     {
-        printf("Selection changed!\n");
+        OnSelectionChanged();
         break;
     }
     }
