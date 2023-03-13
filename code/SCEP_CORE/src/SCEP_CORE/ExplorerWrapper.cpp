@@ -164,10 +164,10 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 			windowPos.y = GET_Y_LPARAM(lParam);
 
 			// map to screen
-			POINT screePos = windowPos;
-			MapWindowPoints(hwnd, HWND_DESKTOP, &screePos, 1);
+			POINT screenPos = windowPos;
+			MapWindowPoints(hwnd, HWND_DESKTOP, &screenPos, 1);
 
-			pThis->onMiddleClick(hwnd, windowPos, screePos);
+			pThis->onMiddleClick(hwnd, windowPos, screenPos);
 		}
 		break;
 	default:
@@ -844,6 +844,8 @@ void ExplorerWrapper::OnSelectionChanged()
 				return success();
 			};
 
+			// Need a certain delay in order to get everything processed and the item selection done
+			// But don't know why...
 			QTimer::singleShot(OffsetMs, [process]()
 				{
 					if (ErrorPtr pError = process())
@@ -855,33 +857,33 @@ void ExplorerWrapper::OnSelectionChanged()
 
 
 }
+////
+//NavigationPath GetDisplayNameOf(IShellFolder* shellFolder, LPITEMIDLIST pidl, SHGDNF /*uFlags*/)
+//{
+//	STRRET StrRet;
+//	StrRet.uType = STRRET_WSTR;
 //
-NavigationPath GetDisplayNameOf(IShellFolder* shellFolder, LPITEMIDLIST pidl, SHGDNF /*uFlags*/)
-{
-	STRRET StrRet;
-	StrRet.uType = STRRET_WSTR;
-
-	HRESULT hr = shellFolder->GetDisplayNameOf((PCUITEMID_CHILD) pidl, SHGDN_NORMAL + SHGDN_FORPARSING, &StrRet);
-	if (FAILED(hr))
-	{
-		qCritical() << "GetDisplayNameOf:hr:  " << hr;
-		return {};
-	}
-
-	switch (StrRet.uType)
-	{
-	case STRRET_CSTR :
-		qCritical() << "GetDisplayNameOf:unexpected return type:STRRET_CSTR :  " << StrRet.cStr;
-		return QString(StrRet.cStr);
-	case STRRET_WSTR :
-		return QString::fromWCharArray(StrRet.pOleStr);
-	case STRRET_OFFSET :
-		qCritical() << "GetDisplayNameOf:unexpected return type:STRRET_OFFSET :  " << (((char*)pidl) + StrRet.uOffset);
-		return QString(((char*)pidl) + StrRet.uOffset);
-	default:
-		return {};
-	}
-}
+//	HRESULT hr = shellFolder->GetDisplayNameOf((PCUITEMID_CHILD) pidl, SHGDN_NORMAL + SHGDN_FORPARSING, &StrRet);
+//	if (FAILED(hr))
+//	{
+//		qCritical() << "GetDisplayNameOf:hr:  " << hr;
+//		return {};
+//	}
+//
+//	switch (StrRet.uType)
+//	{
+//	case STRRET_CSTR :
+//		qCritical() << "GetDisplayNameOf:unexpected return type:STRRET_CSTR :  " << StrRet.cStr;
+//		return QString(StrRet.cStr);
+//	case STRRET_WSTR :
+//		return QString::fromWCharArray(StrRet.pOleStr);
+//	case STRRET_OFFSET :
+//		qCritical() << "GetDisplayNameOf:unexpected return type:STRRET_OFFSET :  " << (((char*)pidl) + StrRet.uOffset);
+//		return QString(((char*)pidl) + StrRet.uOffset);
+//	default:
+//		return {};
+//	}
+//}
 //
 ErrorPtr ExplorerWrapper::getSelectedItems(std::vector<NavigationPath>& items, Pane pane)
 {
@@ -940,7 +942,27 @@ ErrorPtr ExplorerWrapper::getSelectedItems(std::vector<NavigationPath>& items, P
 	return success();
 }
 //
-void ExplorerWrapper::onMiddleClick(HWND hwnd, const POINT& windowPos, const POINT& screePos)
+ErrorPtr ExplorerWrapper::onTreeControlMiddleClick(POINT windowPos)
+{
+	Box<IShellItem> psi = nullptr;
+
+	HRESULT hr = m_treeControl.p_nstc->HitTest(&windowPos, &psi);
+	CHECK(SUCCEEDED(hr), QString("Could not get clicked item : ") + GetErrorAsString(hr));
+
+	if (psi)
+	{
+		PIDLIST_ABSOLUTE pidl;
+		hr = SHGetIDListFromObject(psi.get(), &pidl);
+		CHECK(SUCCEEDED(hr), QString("Could not get selected item path : %1").arg(GetErrorAsString(hr)));
+
+		NavigationPath path(pidl);
+		emit openNewTab(path, NewTabPosition::AfterCurrent, NewTabBehaviour::None);
+	}
+
+	return success();
+}
+//
+void ExplorerWrapper::onMiddleClick(HWND hwnd, POINT windowPos, POINT screenPos)
 {
 	// Active Window
 	HWND active_hwn = GetActiveWindow();
@@ -950,7 +972,7 @@ void ExplorerWrapper::onMiddleClick(HWND hwnd, const POINT& windowPos, const POI
 
 
 	// Inside ?
-	auto isInside = [screePos](HWND source_hwnd, HWND expected_hwnd, const QString& expectedClassName) -> bool
+	auto isInside = [screenPos](HWND source_hwnd, HWND expected_hwnd, const QString& expectedClassName) -> bool
 	{
 		RECT rc;
 		bool ok = GetWindowRect(expected_hwnd, &rc);
@@ -980,7 +1002,7 @@ void ExplorerWrapper::onMiddleClick(HWND hwnd, const POINT& windowPos, const POI
 			}
 		}
 
-		return PtInRect(&rc, screePos);
+		return PtInRect(&rc, screenPos);
 	};
 
 	bool sh_clicked = isInside(hwnd, m_shellView.m_sv_hwnd, "SHELLDLL_DefView");
@@ -1112,11 +1134,14 @@ void ExplorerWrapper::onMiddleClick(HWND hwnd, const POINT& windowPos, const POI
 			inputs[1].mi.dwExtraInfo = 0;
 
 			SendInput(2, inputs, sizeof(INPUT));
+
+			// see OnSelectionChanged for the following !
 		};
 
+		// clearSelection() fails if called in this event processing method
+		// so we require to postpone it after the event has been processed !
 		QTimer::singleShot(0, endProcess);
 
-		// see OnSelectionChanged for the following !
 		
 
 		//// Let the win 32 event loop process the inputs and try to open a new tab on the selected item
@@ -1181,7 +1206,21 @@ void ExplorerWrapper::onMiddleClick(HWND hwnd, const POINT& windowPos, const POI
 
 	else if (nstc_clicked)
 	{
+	
+		// map to window
+		POINT nstcPos = windowPos;
+		MapWindowPoints(hwnd, m_treeControl.m_nstc_hwnd, &nstcPos, 1);
 
+		// INamespaceTreeControl::HitTest() fails if called in this event processing method
+		// so we require to postpone it after the event has been processed !
+		QTimer::singleShot(0, [this, nstcPos]() {
+				ErrorPtr pError = this->onTreeControlMiddleClick(nstcPos);
+				if (pError)
+				{
+					qCritical() << "Namespace tree control middle click failure : " << *pError;
+				}
+			}
+		);
 	}
 
 	/*if (hwn == m_webBrowser.m_wb_hwnd)

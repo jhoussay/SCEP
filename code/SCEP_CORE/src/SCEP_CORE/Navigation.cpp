@@ -734,7 +734,7 @@ bool NavigationPath::isExistingDirectory() const
 	else
 	{
 		QFileInfo fi(m_internalPath);
-		return (! m_internalPath.isEmpty()) && fi.exists() && fi.isDir();
+		return (! m_internalPath.isEmpty()) && fi.exists() && (fi.isDir() || fi.suffix().toLower() == "zip");
 	}
 }
 //

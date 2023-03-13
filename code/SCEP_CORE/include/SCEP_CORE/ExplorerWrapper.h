@@ -159,10 +159,15 @@ private:
 
 	ErrorPtr		getSelectedItems(std::vector<NavigationPath>& items, Pane pane);
 
+	/**
+	 *	@brief		Method called on tree control middle click
+	 */
+	ErrorPtr		onTreeControlMiddleClick(POINT windowPos);
+
 public:
 //	void			processMiddleClickEvent();
 
-	void			onMiddleClick(HWND hwnd, const POINT& windowPos, const POINT& screePos);
+	void			onMiddleClick(HWND hwnd, POINT windowPos, POINT screenPos);
 
 //	void			requestingFakeContextMenu();
 //	bool			contextMenuRequired();

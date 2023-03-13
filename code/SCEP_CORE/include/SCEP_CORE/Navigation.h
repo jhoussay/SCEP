@@ -126,7 +126,7 @@ public:
 	 *	@brief		Indicates whether the path corresponds to an existing directory
 	 *
 	 *	Two cases :
-	 *	- real folder : test whether the path corresponds to a filesystem directory and whether it exists.
+	 *	- real folder : test whether the path corresponds to a filesystem directory or a zip archive and whether it exists.
 	 *	- virtual folder : returns `true`
 	 */
 	bool			isExistingDirectory() const;
